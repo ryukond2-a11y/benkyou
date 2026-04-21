@@ -23,12 +23,51 @@ const MATH_LEVELS = {
   5: "連立方程式（代入法・応用）"
 };
 
-// --- API: サインアップ & 診断テスト完了 ---
+// --- ユーザーデータ構造の更新 ---
 app.post("/api/signup", async (req, res) => {
-  const { username } = req.body;
+  const { username, password } = req.body;
   const userRef = db.collection("users").doc(username);
-  await userRef.set({ username, level: 1, hasTakenTest: false, xp: 0 });
-  res.json({ message: "研究員登録完了" });
+  await userRef.set({
+    username, password, level: 1, hasTakenTest: false,
+    xp: 0, 
+    totalAttempts: 0, // 総挑戦数
+    correctAnswers: 0 // 総正解数
+  });
+  res.json({ message: "登録完了" });
+});
+
+// --- 正誤判定時にカウントを更新 ---
+app.post("/api/record-result", async (req, res) => {
+  const { username, isCorrect } = req.body;
+  const userRef = db.collection("users").doc(username);
+  
+  await userRef.update({
+    totalAttempts: admin.firestore.FieldValue.increment(1),
+    correctAnswers: isCorrect ? admin.firestore.FieldValue.increment(1) : admin.firestore.FieldValue.increment(0)
+  });
+  res.json({ success: true });
+});
+
+// --- ランキング取得API ---
+app.get("/api/rankings", async (req, res) => {
+  const snapshot = await db.collection("users").get();
+  const users = [];
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    const rate = data.totalAttempts > 0 ? (data.correctAnswers / data.totalAttempts) * 100 : 0;
+    users.push({
+      username: data.username,
+      totalAttempts: data.totalAttempts || 0,
+      accuracy: rate.toFixed(1) // 小数点第1位まで
+    });
+  });
+
+  // 1. 挑戦数ランキング（降順）
+  const attemptRank = [...users].sort((a, b) => b.totalAttempts - a.totalAttempts).slice(0, 5);
+  // 2. 正答率ランキング（降順）
+  const accuracyRank = [...users].sort((a, b) => b.accuracy - a.accuracy).slice(0, 5);
+
+  res.json({ attemptRank, accuracyRank });
 });
 
 app.post("/api/finish-test", async (req, res) => {
