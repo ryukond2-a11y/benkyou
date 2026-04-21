@@ -1,21 +1,20 @@
 const admin = require("firebase-admin");
 const serviceAccount = require("./serviceAccountKey.json");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const express = require("express"); // 追加：Webサーバー用
+const express = require("express");
+const path = require("path");
 const app = express();
-const port = process.env.PORT || 3000; // Renderが指定するポート番号を使用
+const port = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(express.static("public")); // HTMLファイルを読み込む設定
 
 // --- Firebase & Gemini 初期化 ---
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY); // 環境変数から取得
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// --- カリキュラム定義 ---
 const MATH_LEVELS = {
   1: "正負の数の加減（混合計算）",
   2: "一次方程式（移項と分配法則）",
@@ -24,26 +23,32 @@ const MATH_LEVELS = {
   5: "連立方程式（代入法・応用）"
 };
 
-// --- Webサーバーとしての動作確認用 ---
-app.get("/", (req, res) => {
-  res.send("根田理化学研究所 AI学習システム稼働中...");
-});
-
-// --- 所長設計の機能をAPIとして公開 ---
-app.post("/signup", async (req, res) => {
-  const { username, password } = req.body;
+// --- API: サインアップ & 診断テスト完了 ---
+app.post("/api/signup", async (req, res) => {
+  const { username } = req.body;
   const userRef = db.collection("users").doc(username);
-  await userRef.set({
-    username,
-    password,
-    hasTakenTest: false,
-    level: 1,
-    xp: 0
-  });
-  res.json({ message: "アカウント作成完了" });
+  await userRef.set({ username, level: 1, hasTakenTest: false, xp: 0 });
+  res.json({ message: "研究員登録完了" });
 });
 
-// サーバーを起動し、アクセスを待ち続ける状態にする
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+app.post("/api/finish-test", async (req, res) => {
+  const { username, score } = req.body;
+  let startLevel = score >= 5 ? 5 : score >= 3 ? 4 : score >= 1 ? 2 : 1;
+  await db.collection("users").doc(username).update({ hasTakenTest: true, level: startLevel });
+  res.json({ level: startLevel });
 });
+
+// --- API: AI問題生成 ---
+app.get("/api/question/:username", async (req, res) => {
+  const user = await db.collection("users").doc(req.params.username).get();
+  const userData = user.data();
+  const unit = MATH_LEVELS[userData.level];
+
+  const prompt = `あなたは数学教師です。レベル${userData.level}の「${unit}」の問題を1問作り、JSON形式で返してください。
+  {"question": "問題文", "answer": "答えのみ", "explanation": "解説"}`;
+
+  const result = await model.generateContent(prompt);
+  res.json(JSON.parse(result.response.text().replace(/```json|```/g, "")));
+});
+
+app.listen(port, () => console.log(`稼働中: port ${port}`));
