@@ -83,9 +83,13 @@ app.get("/api/question/:username", async (req, res) => {
   const userData = user.data();
   const unit = MATH_LEVELS[userData.level];
 
-  const prompt = `あなたは数学教師です。レベル${userData.level}の「${unit}」の問題を1問作り、JSON形式で返してください。
-  {"question": "問題文", "answer": "答えのみ", "explanation": "解説"}`;
-
+  // index.js 内のプロンプト部分
+const prompt = `数学教師として、レベル${userData.level}の問題を1問作成してください。
+【重要ルール】
+1. 数式は必ず LaTeX 形式（$x^2$ や $\frac{1}{2}$ など）を使用し、$マークで囲んでください。
+2. 変数は斜体に見えるよう $x, y$ としてください。
+3. 返答は以下のJSON形式のみ。
+{"question": "問題文", "answer": "数値のみ", "explanation": "解説"}`;
   const result = await model.generateContent(prompt);
   res.json(JSON.parse(result.response.text().replace(/```json|```/g, "")));
 });
