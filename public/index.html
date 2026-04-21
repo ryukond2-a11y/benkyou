@@ -1,1 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head><title>根田理化学研究所 AI学習</title></head>
+<body>
+  <h1>根田理化学研究所・AI数学システム</h1>
+  <div id="auth">
+    <input id="uname" placeholder="研究員名">
+    <button onclick="signup()">研究開始</button>
+  </div>
+  <div id="game" style="display:none">
+    <p id="level-display"></p>
+    <div id="q-area">
+      <p id="q-text">問題を読み込み中...</p>
+      <input id="user-ans"> <button onclick="check()">回答</button>
+    </div>
+    <p id="feedback"></p>
+  </div>
 
+  <script>
+    let currentUser = "";
+    async function signup() {
+      currentUser = document.getElementById("uname").value;
+      await fetch("/api/signup", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({username: currentUser})
+      });
+      document.getElementById("auth").style.display = "none";
+      document.getElementById("game").style.display = "block";
+      loadQuestion();
+    }
+
+    async function loadQuestion() {
+      const res = await fetch(`/api/question/${currentUser}`);
+      const data = await res.json();
+      window.currentQ = data;
+      document.getElementById("q-text").innerText = data.question;
+    }
+
+    function check() {
+      const ans = document.getElementById("user-ans").value;
+      const feedback = document.getElementById("feedback");
+      if(ans == window.currentQ.answer) {
+        feedback.innerHTML = "正解！<br>" + window.currentQ.explanation;
+        setTimeout(loadQuestion, 3000);
+      } else {
+        feedback.innerText = "不正解。ヒント： " + window.currentQ.explanation;
+      }
+    }
+  </script>
+</body>
+</html>
