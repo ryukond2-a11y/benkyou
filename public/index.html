@@ -1,52 +1,184 @@
 <!DOCTYPE html>
-<html>
-<head><title>根田理化学研究所 AI学習</title></head>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI数学マスター</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f4f7f9; display: flex; flex-direction: column; align-items: center; padding: 20px; color: #333; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 600px; margin-bottom: 20px; }
+        h1 { color: #1a73e8; text-align: center; font-size: 24px; margin-bottom: 30px; }
+        h3 { border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; font-size: 18px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; margin-top: 10px; }
+        button:hover { background: #1557b0; }
+        .hidden { display: none; }
+        #status-bar { display: flex; justify-content: space-between; font-size: 14px; color: #666; margin-bottom: 10px; }
+        #q-text { font-size: 22px; font-weight: bold; margin: 20px 0; text-align: center; }
+        #explanation { background: #e8f0fe; padding: 15px; border-radius: 8px; margin-top: 15px; line-height: 1.6; }
+        .rank-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 600px; }
+        .rank-card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .rank-list { list-style: none; padding: 0; font-size: 14px; }
+        .rank-list li { padding: 5px 0; border-bottom: 1px solid #eee; }
+    </style>
+</head>
 <body>
-  <h1>根田理化学研究所・AI数学システム</h1>
-  <div id="auth">
-    <input id="uname" placeholder="研究員名">
-    <button onclick="signup()">研究開始</button>
-  </div>
-  <div id="game" style="display:none">
-    <p id="level-display"></p>
-    <div id="q-area">
-      <p id="q-text">問題を読み込み中...</p>
-      <input id="user-ans"> <button onclick="check()">回答</button>
+
+    <div class="card">
+        <h1>AI数学マスター</h1>
+
+        <div id="auth-area">
+            <input id="uname" placeholder="ユーザー名">
+            <input id="pass" type="password" placeholder="パスワード">
+            <button onclick="startApp()">ログイン / 新規登録</button>
+        </div>
+
+        <div id="test-intro" class="hidden text-center">
+            <p>現在の実力を測るため、5問の診断テストを受けましょう。</p>
+            <button onclick="startTest()">診断テストを開始する</button>
+        </div>
+
+        <div id="test-area" class="hidden">
+            <h3 id="test-q-num">診断テスト 第1問/5</h3>
+            <div id="test-q-text" style="font-size: 20px; margin: 20px 0; text-align: center;"></div>
+            <input id="test-ans" placeholder="答えを入力">
+            <button onclick="nextTestQ()">次へ</button>
+        </div>
+
+        <div id="study-area" class="hidden">
+            <div id="status-bar">
+                <span id="display-unit">ロード中...</span>
+                <span id="display-xp">XP: 0 / 100</span>
+            </div>
+            <div id="q-text">問題を生成中...</div>
+            <input id="user-ans" placeholder="答えを入力">
+            <button id="submit-btn" onclick="checkAnswer()">回答を提出</button>
+            <div id="explanation" class="hidden"></div>
+            <button id="next-btn" class="hidden" onclick="loadQuestion()" style="background:#34a853;">次の問題へ</button>
+        </div>
     </div>
-    <p id="feedback"></p>
-  </div>
 
-  <script>
-    let currentUser = "";
-    async function signup() {
-      currentUser = document.getElementById("uname").value;
-      await fetch("/api/signup", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({username: currentUser})
-      });
-      document.getElementById("auth").style.display = "none";
-      document.getElementById("game").style.display = "block";
-      loadQuestion();
-    }
+    <div class="rank-container">
+        <div class="rank-card">
+            <h3>🔥 挑戦数TOP5</h3>
+            <ul id="rank-attempts" class="rank-list"></ul>
+        </div>
+        <div class="rank-card">
+            <h3>🎯 正答率TOP5</h3>
+            <ul id="rank-accuracy" class="rank-list"></ul>
+        </div>
+    </div>
 
-    async function loadQuestion() {
-      const res = await fetch(`/api/question/${currentUser}`);
-      const data = await res.json();
-      window.currentQ = data;
-      document.getElementById("q-text").innerText = data.question;
-    }
+    <script>
+        let user = "";
+        const testQuestions = [
+            { q: "(-5) + (+8) * (-2)", a: "-21" },
+            { q: "3x - 7 = 11 の x は？", a: "6" },
+            { q: "2(x - 3) = 4x + 8 の x は？", a: "-7" },
+            { q: "x + y = 10, x - y = 2 の x は？", a: "6" },
+            { q: "x/2 + y/3 = 5, x - y = 0 の x は？", a: "6" }
+        ];
+        let currentTestIdx = 0;
+        let testScore = 0;
 
-    function check() {
-      const ans = document.getElementById("user-ans").value;
-      const feedback = document.getElementById("feedback");
-      if(ans == window.currentQ.answer) {
-        feedback.innerHTML = "正解！<br>" + window.currentQ.explanation;
-        setTimeout(loadQuestion, 3000);
-      } else {
-        feedback.innerText = "不正解。ヒント： " + window.currentQ.explanation;
-      }
-    }
-  </script>
+        async function startApp() {
+            user = document.getElementById("uname").value;
+            const pass = document.getElementById("pass").value;
+            if(!user || !pass) return alert("名前とパスワードを入れてね");
+
+            await fetch("/api/signup", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({username: user, password: pass})
+            });
+
+            document.getElementById("auth-area").classList.add("hidden");
+            document.getElementById("test-intro").classList.remove("hidden");
+            loadRankings();
+        }
+
+        function startTest() {
+            document.getElementById("test-intro").classList.add("hidden");
+            document.getElementById("test-area").classList.remove("hidden");
+            showTestQuestion();
+        }
+
+        function showTestQuestion() {
+            document.getElementById("test-q-num").innerText = `診断テスト 第${currentTestIdx + 1}/5問`;
+            document.getElementById("test-q-text").innerText = testQuestions[currentTestIdx].q;
+        }
+
+        async function nextTestQ() {
+            const ans = document.getElementById("test-ans").value;
+            if(ans == testQuestions[currentTestIdx].a) testScore++;
+            currentTestIdx++;
+
+            if(currentTestIdx < testQuestions.length) {
+                document.getElementById("test-ans").value = "";
+                showTestQuestion();
+            } else {
+                const res = await fetch("/api/finish-test", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({username: user, score: testScore})
+                });
+                const data = await res.json();
+                alert(`診断完了！レベル ${data.level} からスタートします。`);
+                document.getElementById("test-area").classList.add("hidden");
+                document.getElementById("study-area").classList.remove("hidden");
+                loadQuestion();
+            }
+        }
+
+        async function loadQuestion() {
+            document.getElementById("next-btn").classList.add("hidden");
+            document.getElementById("explanation").classList.add("hidden");
+            document.getElementById("user-ans").value = "";
+            document.getElementById("q-text").innerText = "AIが問題を生成中...";
+
+            const res = await fetch("/api/question", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({username: user})
+            });
+            window.currentQ = await res.json();
+            document.getElementById("q-text").innerText = window.currentQ.question;
+        }
+
+        async function checkAnswer() {
+            const ans = document.getElementById("user-ans").value;
+            const isCorrect = (ans == window.currentQ.answer);
+            
+            await fetch("/api/record-result", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({username: user, isCorrect: isCorrect})
+            });
+
+            const exp = document.getElementById("explanation");
+            exp.classList.remove("hidden");
+            exp.innerHTML = (isCorrect ? "✅ 正解！" : "❌ 不正解...") + "<br>" + window.currentQ.explanation;
+            
+            if(isCorrect) {
+                const res = await fetch("/api/add-xp", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({username: user})
+                });
+                const status = await res.json();
+                document.getElementById("display-unit").innerText = status.unit;
+                document.getElementById("display-xp").innerText = `XP: ${status.xp} / 100`;
+                document.getElementById("next-btn").classList.remove("hidden");
+            }
+            loadRankings();
+        }
+
+        async function loadRankings() {
+            const res = await fetch("/api/rankings");
+            const data = await res.json();
+            document.getElementById("rank-attempts").innerHTML = data.attemptRank.map((u, i) => `<li>${i+1}位: ${u.username} (${u.totalAttempts}回)</li>`).join("");
+            document.getElementById("rank-accuracy").innerHTML = data.accuracyRank.map((u, i) => `<li>${i+1}位: ${u.username} (${u.accuracy}%)</li>`).join("");
+        }
+    </script>
 </body>
 </html>
