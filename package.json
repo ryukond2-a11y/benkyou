@@ -1,0 +1,15 @@
+{
+  "name": "benkyou-system",
+  "version": "1.0.0",
+  "description": "根田理化学研究所 AI学習システム",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "firebase-admin": "^12.1.0",
+    "@google/generative-ai": "^0.11.1",
+    "bcryptjs": "^2.4.3"
+  }
+}
