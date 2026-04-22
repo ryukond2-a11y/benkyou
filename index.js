@@ -7,7 +7,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static("public")); // HTMLファイルを読み込む設定
+app.use(express.static("public"));
 
 // --- Firebase & Gemini 初期化 ---
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
@@ -23,24 +23,37 @@ const MATH_LEVELS = {
   5: "連立方程式（代入法・応用）"
 };
 
-// --- ユーザーデータ構造の更新 ---
+// --- 会員登録 ---
 app.post("/api/signup", async (req, res) => {
   const { username, password } = req.body;
   const userRef = db.collection("users").doc(username);
   await userRef.set({
     username, password, level: 1, hasTakenTest: false,
-    xp: 0, 
-    totalAttempts: 0, // 総挑戦数
-    correctAnswers: 0 // 総正解数
-  });
+    xp: 0, totalAttempts: 0, correctAnswers: 0
+  }, { merge: true });
   res.json({ message: "登録完了" });
 });
 
-// --- 正誤判定時にカウントを更新 ---
+// --- XP加算 & レベルアップ処理（★追加：これがないとフロントでエラーになります） ---
+app.post("/api/add-xp", async (req, res) => {
+  const { username } = req.body;
+  const userRef = db.collection("users").doc(username);
+  const user = await userRef.get();
+  let { xp, level } = user.data();
+
+  xp += 20; // 1問正解で20XP
+  if (xp >= 100) {
+    xp = 0;
+    if (level < 5) level++; // 最大レベル5まで
+  }
+  await userRef.update({ xp, level });
+  res.json({ xp, level, unit: MATH_LEVELS[level] });
+});
+
+// --- 正誤判定の記録 ---
 app.post("/api/record-result", async (req, res) => {
   const { username, isCorrect } = req.body;
   const userRef = db.collection("users").doc(username);
-  
   await userRef.update({
     totalAttempts: admin.firestore.FieldValue.increment(1),
     correctAnswers: isCorrect ? admin.firestore.FieldValue.increment(1) : admin.firestore.FieldValue.increment(0)
@@ -48,7 +61,7 @@ app.post("/api/record-result", async (req, res) => {
   res.json({ success: true });
 });
 
-// --- ランキング取得API ---
+// --- ランキング取得 ---
 app.get("/api/rankings", async (req, res) => {
   const snapshot = await db.collection("users").get();
   const users = [];
@@ -58,18 +71,15 @@ app.get("/api/rankings", async (req, res) => {
     users.push({
       username: data.username,
       totalAttempts: data.totalAttempts || 0,
-      accuracy: rate.toFixed(1) // 小数点第1位まで
+      accuracy: parseFloat(rate.toFixed(1))
     });
   });
-
-  // 1. 挑戦数ランキング（降順）
   const attemptRank = [...users].sort((a, b) => b.totalAttempts - a.totalAttempts).slice(0, 5);
-  // 2. 正答率ランキング（降順）
   const accuracyRank = [...users].sort((a, b) => b.accuracy - a.accuracy).slice(0, 5);
-
   res.json({ attemptRank, accuracyRank });
 });
 
+// --- 診断テスト終了 ---
 app.post("/api/finish-test", async (req, res) => {
   const { username, score } = req.body;
   let startLevel = score >= 5 ? 5 : score >= 3 ? 4 : score >= 1 ? 2 : 1;
@@ -77,21 +87,24 @@ app.post("/api/finish-test", async (req, res) => {
   res.json({ level: startLevel });
 });
 
-// --- API: AI問題生成 ---
-app.get("/api/question/:username", async (req, res) => {
-  const user = await db.collection("users").doc(req.params.username).get();
+// --- AI問題生成（★修正：POSTメソッドに統一し、プロンプトを強化） ---
+app.post("/api/question", async (req, res) => {
+  const { username } = req.body;
+  const user = await db.collection("users").doc(username).get();
   const userData = user.data();
-  const unit = MATH_LEVELS[userData.level];
+  
+  // 数式が壊れないよう、AIへの指示を「エスケープ」を意識したものに強化
+  const prompt = `数学教師として、${MATH_LEVELS[userData.level]}の問題を1問作成してください。
+  【重要ルール】
+  1. 数式は必ず $マークで囲んだLaTeX形式（例：$\\frac{1}{2}$ や $x^2$）で出力してください。
+  2. バックスラッシュは必ず「二重（\\\\）」にして出力してください（例：\\\\times）。
+  3. 変数は $x, y$ としてください。
+  4. 回答は以下の純粋なJSON形式のみ。余計な解説は不要。
+  {"question": "問題文", "answer": "数値のみ", "explanation": "解説"}`;
 
-  // index.js 内のプロンプト部分
-const prompt = `数学教師として、レベル${userData.level}の問題を1問作成してください。
-【重要ルール】
-1. 数式は必ず LaTeX 形式（$x^2$ や $\frac{1}{2}$ など）を使用し、$マークで囲んでください。
-2. 変数は斜体に見えるよう $x, y$ としてください。
-3. 返答は以下のJSON形式のみ。
-{"question": "問題文", "answer": "数値のみ", "explanation": "解説"}`;
   const result = await model.generateContent(prompt);
-  res.json(JSON.parse(result.response.text().replace(/```json|```/g, "")));
+  const text = result.response.text().replace(/```json|```/g, "").trim();
+  res.json(JSON.parse(text));
 });
 
 app.listen(port, () => console.log(`稼働中: port ${port}`));
