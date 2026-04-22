@@ -6,11 +6,39 @@
     <title>AI数学マスター</title>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>
-        window.MathJax = {
-            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
-            chtml: { displayAlign: 'center' }
-        };
-    </script>
+    function generateTests() {
+        const r = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        return [
+            { q: `$(-${r(2,5)}) + (+${r(6,9)}) \\times (-2)$`, a: -Math.abs(-r(2,5) + (r(6,9)*-2)) }, // 計算例
+            { q: `$3x - 7 = 11$`, a: 6 },
+            { q: `$2(x-3) = 4x+8$`, a: -7 },
+            { q: `$x+y=10, x-y=2$ の $x$`, a: 6 },
+            { q: "$\\frac{x}{2} + \\frac{y}{3} = 5, x-y=0$ の $x$", a: 6 }
+        ];
+    }
+
+    async function nextTestQ() {
+        const ans = document.getElementById("test-ans").value;
+        if(ans == testQuestions[currentTestIdx].a) testScore++;
+        currentTestIdx++;
+        if(currentTestIdx < testQuestions.length) {
+            document.getElementById("test-ans").value = "";
+            showTestQuestion();
+        } else {
+            const res = await fetch("/api/finish-test", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({username: user, score: testScore})
+            });
+            const data = await res.json();
+            alert(`診断完了！レベル ${data.level} 開始`);
+            document.getElementById("test-area").classList.add("hidden");
+            document.getElementById("study-area").classList.remove("hidden");
+            loadQuestion();
+        }
+    }
+</script>
+
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f4f7f9; display: flex; flex-direction: column; align-items: center; padding: 20px; color: #333; }
         .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 600px; margin-bottom: 20px; }
