@@ -66,6 +66,9 @@
         let testQuestions = [];
         let currentIdx = 0;
         let score = 0;
+let selectedUnit = ""; // 選んだジャンル
+let targetCount = 0;   // 目標の問題数
+let solvedCount = 0;   // 今何問目か
 
         function renderMath() { if(window.MathJax) MathJax.typesetPromise(); }
 
@@ -97,44 +100,91 @@
             renderMath();
         }
 
-        async function nextTestQ() {
-            const ans = document.getElementById("test-ans").value;
-            if(ans == testQuestions[currentIdx].a) score++;
-            currentIdx++;
-            if(currentIdx < 5) {
-                document.getElementById("test-ans").value = "";
-                showTest();
-            } else {
-                const res = await fetch("/api/finish-test", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({username: user, score}) });
-                alert("診断完了！学習を始めましょう。");
-                document.getElementById("test-area").classList.add("hidden");
-                document.getElementById("study-area").classList.remove("hidden");
-                loadQuestion();
-            }
-        }
+ async function nextTestQ() {
+    const ans = document.getElementById("test-ans").value;
+    if(ans == testQuestions[currentIdx].a) score++;
+    currentIdx++;
+    if(currentIdx < 5) {
+        document.getElementById("test-ans").value = "";
+        showTest();
+    } else {
+        // --- ここから書き換え ---
+        const res = await fetch("/api/finish-test", { 
+            method: "POST", 
+            headers: {"Content-Type":"application/json"}, 
+            body: JSON.stringify({username: user, score}) 
+        });
+        const data = await res.json();
+        
+        // 診断テストエリアを隠し、ジャンル選択メニューを表示
+        document.getElementById("test-area").classList.add("hidden");
+        document.getElementById("menu-area").classList.remove("hidden"); // HTMLにこのIDのdivが必要
+        
+        // おすすめのレベルを表示
+        document.getElementById("recommend-text").innerText = 
+            `判定結果：あなたは「${selectedUnit || 'Lv.' + data.level}」から始めるのがおすすめ！`;
+        // --- ここまで ---
+    }
+}
 
         async function loadQuestion() {
-            document.getElementById("q-text").innerText = "AIが問題を考えています...";
-            document.getElementById("explanation").classList.add("hidden");
-            document.getElementById("next-btn").classList.add("hidden");
-            const res = await fetch("/api/question", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({username: user}) });
-            window.currentQ = await res.json();
-            document.getElementById("q-text").innerHTML = window.currentQ.question;
-            renderMath();
-        }
+    // --- 追加：目標数に達したら終了 ---
+    if(solvedCount >= targetCount && targetCount !== 0) {
+        alert(`${targetCount}問の特訓完了！お疲れ様でした。`);
+        location.reload(); 
+        return;
+    }
 
-        async function checkAnswer() {
-            const ans = document.getElementById("user-ans").value;
-            const isCorrect = (ans == window.currentQ.answer);
-            await fetch("/api/record-result", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({username: user, isCorrect}) });
-            if(isCorrect) await fetch("/api/add-xp", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({username: user}) });
-            
-            const exp = document.getElementById("explanation");
-            exp.innerHTML = (isCorrect ? "✅正解！" : "❌残念...") + "<br>" + window.currentQ.explanation;
-            exp.classList.remove("hidden");
-            document.getElementById("next-btn").classList.remove("hidden");
-            renderMath();
-        }
+    document.getElementById("q-text").innerText = "AIが問題を考えています...";
+    document.getElementById("explanation").classList.add("hidden");
+    document.getElementById("next-btn").classList.add("hidden");
+    document.getElementById("user-ans").value = ""; // 入力欄を空にする
+
+    const res = await fetch("/api/question", { 
+        method: "POST", 
+        headers: {"Content-Type":"application/json"}, 
+        // --- 修正：usernameだけでなく、選んだジャンル(unit)も送る ---
+        body: JSON.stringify({username: user, unit: selectedUnit}) 
+    });
+    window.currentQ = await res.json();
+    document.getElementById("q-text").innerHTML = window.currentQ.question;
+    renderMath();
+}
+async function checkAnswer() {
+    const ans = document.getElementById("user-ans").value;
+    const isCorrect = (ans == window.currentQ.answer);
+    
+    // --- 追加：正解したらカウントアップ ---
+    if(isCorrect) {
+        solvedCount++;
+    }
+
+    await fetch("/api/record-result", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({username: user, isCorrect}) });
+    if(isCorrect) await fetch("/api/add-xp", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({username: user}) });
+    
+    const exp = document.getElementById("explanation");
+    exp.innerHTML = (isCorrect ? "✅正解！" : "❌残念...") + "<br>" + window.currentQ.explanation;
+    exp.classList.remove("hidden");
+    document.getElementById("next-btn").classList.remove("hidden");
+    renderMath();
+}
+// ジャンルを選んだら問題数選択へ
+function selectGenre(unit) {
+    selectedUnit = unit;
+    document.getElementById("menu-area").classList.add("hidden");
+    document.getElementById("count-area").classList.remove("hidden");
+}
+
+// 問題数を選んだら学習スタート
+function startStudy(count) {
+    targetCount = count;
+    solvedCount = 0;
+    document.getElementById("count-area").classList.add("hidden");
+    document.getElementById("study-area").classList.remove("hidden");
+    loadQuestion();
+}
+
+
     </script>
 </body>
 </html>
