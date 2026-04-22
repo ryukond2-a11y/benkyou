@@ -187,7 +187,9 @@ async function nextTestQ() {
         body: JSON.stringify({username: user, unit: selectedUnit}) 
     });
     window.currentQ = await res.json();
-    document.getElementById("q-text").innerHTML = window.currentQ.question;
+
+currentAIQuestion = await res.json(); // 変数名を合わせる
+document.getElementById("q-text").innerHTML = currentAIQuestion.question;
     renderMath();
 }
 async function checkAnswer() {
