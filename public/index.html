@@ -73,7 +73,35 @@
 let selectedUnit = ""; // 選んだジャンル
 let targetCount = 0;   // 目標の問題数
 let solvedCount = 0;   // 今何問目か
+let isSignupMode = false;
 
+function toggleAuthMode() {
+    isSignupMode = !isSignupMode;
+    document.getElementById("auth-title").innerText = isSignupMode ? "新規登録" : "ログイン";
+    document.getElementById("auth-btn").innerText = isSignupMode ? "登録して開始" : "ログイン";
+}
+
+async function handleAuth() {
+    const username = document.getElementById("uname").value;
+    const password = document.getElementById("pass").value;
+    const endpoint = isSignupMode ? "/api/signup" : "/api/login";
+
+    const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ username, password })
+    });
+
+    if (res.ok) {
+        currentUser = username;
+        document.getElementById("auth-area").classList.add("hidden");
+        document.getElementById("test-area").classList.remove("hidden");
+        showTest();
+    } else {
+        const err = await res.json();
+        alert(err.error);
+    }
+}
         function renderMath() { if(window.MathJax) MathJax.typesetPromise(); }
 
         function generateTests() {
