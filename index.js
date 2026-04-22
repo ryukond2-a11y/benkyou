@@ -78,17 +78,23 @@ app.post("/api/question", async (req, res) => {
     const { unit } = req.body;
     const prompt = `数学教師として、中学数学の「${unit}」の問題を1問作成してください。
     【重要】1. 数式は $ で囲む LaTeX。 2. バックスラッシュは2重（\\\\）にする。
-    3. 返答は以下のJSON形式のみ： {"question": "問題", "answer": "数値", "explanation": "解説"}`;
+    3. 返答は必ず以下のJSON形式のみで、挨拶は一切不要です： {"question": "問題", "answer": "数値", "explanation": "解説"}`;
     
     const result = await model.generateContent(prompt);
-    const responseText = result.response.text().replace(/```json|```/g, "").trim();
-    res.json(JSON.parse(responseText));
+    let responseText = result.response.text();
+
+    // ★ 修正ポイント：JSON以外の部分（```json とか 挨拶）を力技で削る
+    const jsonStart = responseText.indexOf('{');
+    const jsonEnd = responseText.lastIndexOf('}') + 1;
+    const cleanJson = responseText.substring(jsonStart, jsonEnd);
+    
+    console.log("AI Response:", cleanJson); // ログで確認できるようにする
+    res.json(JSON.parse(cleanJson));
   } catch (e) {
     console.error("AI Error:", e);
     res.status(500).json({ error: "AI生成失敗" });
   }
 });
-
 app.listen(port, "0.0.0.0", () => {
   console.log(`Server running on port ${port}`);
 });
