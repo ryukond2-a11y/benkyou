@@ -92,8 +92,9 @@ async function handleAuth() {
         body: JSON.stringify({ username, password })
     });
 
-    if (res.ok) {
-        currentUser = username;
+if (res.ok) {
+    user = username; // currentUser ではなく user に代入（重要！）
+    testQuestions = generateTests(); // ここで問題を作成
         document.getElementById("auth-area").classList.add("hidden");
         document.getElementById("test-area").classList.remove("hidden");
         showTest();
@@ -104,16 +105,16 @@ async function handleAuth() {
 }
         function renderMath() { if(window.MathJax) MathJax.typesetPromise(); }
 
-        function generateTests() {
-            const r = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-            return [
-                { q: `$(-${r(2,5)}) + (+${r(6,9)}) \\times (-2)$`, a: -Math.abs(r(2,5)) }, // 仮の計算式
-                { q: `$3x - 7 = 11$ の $x$ は？`, a: 6 },
-                { q: `$x + y = 10, x - y = 2$ の $x$ は？`, a: 6 },
-                { q: "$\\frac{x}{2} + \\frac{y}{3} = 5, x - y = 0$ の $x$ は？", a: 6 },
-                { q: `$2(x-3) = 4x+8$ の $x$ は？`, a: -7 }
-            ];
-        }
+function generateTests() {
+    // 診断テスト用の5問をセットします
+    return [
+        { q: "$(-3) + (+8)$", a: 5 },
+        { q: "$(-2) \\times (-5)$", a: 10 },
+        { q: "$3x - 7 = 11$ の $x$", a: 6 },
+        { q: "$x + y = 10, x - y = 2$ の $x$", a: 6 },
+        { q: "$-4x = 20$ の $x$", a: -5 }
+    ];
+}
 
         async function login() {
             user = document.getElementById("uname").value;
@@ -167,8 +168,8 @@ async function nextTestQ() {
         }
     }
 }
-        async function loadQuestion() {
-    // --- 追加：目標数に達したら終了 ---
+        /* --- loadQuestion 関数の中をこれに差し替え --- */
+async function loadQuestion() {
     if(solvedCount >= targetCount && targetCount !== 0) {
         alert(`${targetCount}問の特訓完了！お疲れ様でした。`);
         location.reload(); 
@@ -178,19 +179,21 @@ async function nextTestQ() {
     document.getElementById("q-text").innerText = "AIが問題を考えています...";
     document.getElementById("explanation").classList.add("hidden");
     document.getElementById("next-btn").classList.add("hidden");
-    document.getElementById("user-ans").value = ""; // 入力欄を空にする
+    document.getElementById("user-ans").value = "";
 
     const res = await fetch("/api/question", { 
         method: "POST", 
         headers: {"Content-Type":"application/json"}, 
-        // --- 修正：usernameだけでなく、選んだジャンル(unit)も送る ---
         body: JSON.stringify({username: user, unit: selectedUnit}) 
     });
+
+    // ★ 1回だけ json を受け取って window.currentQ に入れる
     window.currentQ = await res.json();
 
-currentAIQuestion = await res.json(); // 変数名を合わせる
-document.getElementById("q-text").innerHTML = currentAIQuestion.question;
+    // ★ currentAIQuestion ではなく window.currentQ を使う
+    document.getElementById("q-text").innerHTML = window.currentQ.question;
     renderMath();
+}
 }
 async function checkAnswer() {
     const ans = document.getElementById("user-ans").value;
