@@ -100,33 +100,41 @@ let solvedCount = 0;   // 今何問目か
             renderMath();
         }
 
- async function nextTestQ() {
+async function nextTestQ() {
     const ans = document.getElementById("test-ans").value;
-    if(ans == testQuestions[currentIdx].a) score++;
-    currentIdx++;
+    
+    // 現在の問題の正解判定
+    if(ans == testQuestions[currentIdx].a) {
+        score++;
+    }
+
+    // ★重要：先にカウントを増やし、5問終わったかどうかを判定する
+    currentIdx++; 
+
     if(currentIdx < 5) {
+        // まだ問題がある場合
         document.getElementById("test-ans").value = "";
         showTest();
     } else {
-        // --- ここから書き換え ---
-        const res = await fetch("/api/finish-test", { 
-            method: "POST", 
-            headers: {"Content-Type":"application/json"}, 
-            body: JSON.stringify({username: user, score}) 
-        });
-        const data = await res.json();
-        
-        // 診断テストエリアを隠し、ジャンル選択メニューを表示
-        document.getElementById("test-area").classList.add("hidden");
-        document.getElementById("menu-area").classList.remove("hidden"); // HTMLにこのIDのdivが必要
-        
-        // おすすめのレベルを表示
-        document.getElementById("recommend-text").innerText = 
-            `判定結果：あなたは「${selectedUnit || 'Lv.' + data.level}」から始めるのがおすすめ！`;
-        // --- ここまで ---
+        // 5問すべて解き終わった場合
+        try {
+            const res = await fetch("/api/finish-test", { 
+                method: "POST", 
+                headers: {"Content-Type":"application/json"}, 
+                body: JSON.stringify({username: user, score}) 
+            });
+            const data = await res.json();
+            
+            // 診断画面を隠してメニューを表示
+            document.getElementById("test-area").classList.add("hidden");
+            document.getElementById("menu-area").classList.remove("hidden");
+            document.getElementById("recommend-text").innerText = `判定完了！Lv.${data.level}がおすすめです。`;
+        } catch (e) {
+            console.error("通信エラー:", e);
+            alert("結果の送信に失敗しました。サーバーのログを確認してください。");
+        }
     }
 }
-
         async function loadQuestion() {
     // --- 追加：目標数に達したら終了 ---
     if(solvedCount >= targetCount && targetCount !== 0) {
