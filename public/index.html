@@ -84,15 +84,19 @@
 
         function updateMath() { if (window.MathJax) MathJax.typesetPromise(); }
 
-        // 診断テスト：難易度は変えず数値だけ毎回変える関数
         function generateTests() {
             const r = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+            
+            // 第1問の正解を計算
+            const a1 = r(2,9); const b1 = r(2,9); const c1 = r(-9,-2);
+            const ans1 = -a1 + (b1 * c1);
+
             return [
-                { q: `$(-${r(2,9)}) + (+${r(2,9)}) \\times (${r(-9,-2)})$`, type: "calc" },
-                { q: `$${r(2,5)}x - ${r(2,10)} = ${r(10,30)}$ の $x$ は？`, type: "eq1" },
-                { q: `$2(x - ${r(1,5)}) = 4x + ${r(2,8)}$ の $x$ は？`, type: "eq2" },
-                { q: `$x + y = ${r(5,15)}, x - y = ${r(1,5)}$ の $x$ は？`, type: "eq3" },
-                { q: "$\\frac{x}{2} + \\frac{y}{3} = 5, x - y = 0$ の $x$ は？", a: "6" }
+                { q: `$(-${a1}) + (+${b1}) \\times (${c1})$`, a: ans1 },
+                { q: `$3x - 7 = 11$ の $x$ は？`, a: 6 },
+                { q: `$2(x - 3) = 4x + 8$ の $x$ は？`, a: -7 },
+                { q: `$x + y = 10, x - y = 2$ の $x$ は？`, a: 6 },
+                { q: "$\\frac{x}{2} + \\frac{y}{3} = 5, x - y = 0$ の $x$ は？", a: 6 }
             ];
         }
 
