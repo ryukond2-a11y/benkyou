@@ -32,6 +32,25 @@
             <input id="test-ans" placeholder="答えを入力">
             <button onclick="nextTestQ()">次へ</button>
         </div>
+<div id="menu-area" class="hidden">
+    <div style="background:#fff3cd; padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #ffeeba;">
+        <p id="recommend-text" style="font-weight:bold; margin:0;"></p>
+    </div>
+    <p>挑戦するジャンルを選んでください：</p>
+    <button onclick="selectGenre('正負の数')" style="background:#6c757d; margin-bottom:5px;">Lv.1 正負の数</button>
+    <button onclick="selectGenre('一次方程式')" style="background:#6c757d; margin-bottom:5px;">Lv.2 一次方程式</button>
+    <button onclick="selectGenre('方程式の応用')" style="background:#6c757d; margin-bottom:5px;">Lv.3 方程式の応用</button>
+    <button onclick="selectGenre('連立方程式')" style="background:#6c757d; margin-bottom:5px;">Lv.4 連立方程式</button>
+    <button onclick="selectGenre('連立方程式の応用')" style="background:#6c757d; margin-bottom:5px;">Lv.5 連立方程式の応用</button>
+</div>
+
+<div id="count-area" class="hidden">
+    <p id="selected-genre-name" style="font-weight:bold;"></p>
+    <p>何問解きますか？</p>
+    <button onclick="startStudy(3)" style="background:#28a745; margin-bottom:5px;">3問</button>
+    <button onclick="startStudy(5)" style="background:#28a745; margin-bottom:5px;">5問</button>
+    <button onclick="startStudy(10)" style="background:#28a745; margin-bottom:5px;">10問</button>
+</div>
 
         <div id="study-area" class="hidden">
             <div id="q-text"></div>
