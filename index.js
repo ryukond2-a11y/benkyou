@@ -38,13 +38,25 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 /* ===== API エンドポイント ===== */
 
 // サインアップ（ユーザーがいなければ新規作成）
+// 1. 新規登録：名前とパスワードを保存
 app.post("/api/signup", async (req, res) => {
-  const { username } = req.body;
-  if (!users[username]) {
-    users[username] = { level: 1, totalAttempts: 0, correctAnswers: 0 };
-    await saveDB();
-  }
+  const { username, password } = req.body;
+  if (users[username]) return res.status(400).json({ error: "その名前は使われています" });
+  
+  users[username] = { password, level: 1 }; // パスワードも一緒に保存
+  await saveDB();
   res.json({ message: "OK" });
+});
+
+// 2. ログイン：名前とパスワードが一致するか確認
+app.post("/api/login", (req, res) => {
+  const { username, password } = req.body;
+  const user = users[username];
+  if (user && user.password === password) {
+    res.json({ message: "OK", level: user.level });
+  } else {
+    res.status(401).json({ error: "名前かパスワードが違います" });
+  }
 });
 
 // 診断結果の保存
