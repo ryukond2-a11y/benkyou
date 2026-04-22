@@ -4,15 +4,16 @@
     <meta charset="UTF-8">
     <title>AI数学マスター | 根田理化学研究所</title>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script>window.MathJax = { tex: { inlineMath: [['$', '$']] } };</script>
+    <script>
+        window.MathJax = { tex: { inlineMath: [['$', '$']] } };
+    </script>
     <style>
         body { font-family: sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        .card { background: white; padding: 2rem; border-radius: 15px; shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
         .hidden { display: none; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
-        button { width: 100%; padding: 12px; background: #0061da; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 5px; }
-        .genre-btn { background: #6c757d; margin-bottom: 10px; }
-        .count-btn { background: #28a745; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #0061da; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
+        #q-text { font-size: 20px; text-align: center; margin: 20px 0; }
     </style>
 </head>
 <body>
@@ -22,61 +23,53 @@
         <div id="auth-area">
             <input id="uname" placeholder="名前">
             <input id="pass" type="password" placeholder="パスワード">
-            <button onclick="login()">開始</button>
+            <button onclick="login()">ログイン</button>
         </div>
 
         <div id="test-area" class="hidden">
             <p id="test-progress"></p>
-            <div id="test-q-text" style="font-size:20px; text-align:center; margin:20px 0;"></div>
-            <input id="test-ans" placeholder="答え">
+            <div id="test-q-text"></div>
+            <input id="test-ans" placeholder="答えを入力">
             <button onclick="nextTestQ()">次へ</button>
         </div>
 
-        <div id="menu-area" class="hidden">
-            <p id="recommend-text" style="font-weight:bold; color:#d9534f;"></p>
-            <p>学習したいジャンルを選んでください：</p>
-            <button class="genre-btn" onclick="selectGenre('正負の数')">Lv1: 正負の数</button>
-            <button class="genre-btn" onclick="selectGenre('一次方程式')">Lv2: 一次方程式</button>
-            <button class="genre-btn" onclick="selectGenre('方程式の応用')">Lv3: 方程式の応用</button>
-            <button class="genre-btn" onclick="selectGenre('連立方程式')">Lv4: 連立方程式</button>
-            <button class="genre-btn" onclick="selectGenre('連立方程式の応用')">Lv5: 連立方程式の応用</button>
-        </div>
-
-        <div id="count-area" class="hidden">
-            <p>何問解きますか？</p>
-            <button class="count-btn" onclick="startStudy(3)">3問</button>
-            <button class="count-btn" onclick="startStudy(5)">5問</button>
-            <button class="count-btn" onclick="startStudy(10)">10問</button>
-        </div>
-
         <div id="study-area" class="hidden">
-            <p id="study-progress"></p>
-            <div id="q-text" style="font-size:20px; text-align:center; margin:20px 0;"></div>
-            <input id="user-ans" placeholder="答え">
+            <div id="q-text"></div>
+            <input id="user-ans" placeholder="答えを入力">
             <button id="submit-btn" onclick="checkAnswer()">回答する</button>
             <div id="explanation" class="hidden" style="background:#eee; padding:10px; margin-top:10px;"></div>
-            <button id="next-btn" class="hidden" onclick="loadQuestion()">次へ</button>
+            <button id="next-btn" class="hidden" onclick="loadQuestion()" style="background:green; margin-top:10px;">次の問題</button>
         </div>
     </div>
 
     <script>
-        let user = ""; let testQuestions = []; let currentIdx = 0; let score = 0;
-        let selectedUnit = ""; let targetCount = 0; let solvedCount = 0;
+        let user = "";
+        let testQuestions = [];
+        let currentIdx = 0;
+        let score = 0;
 
         function renderMath() { if(window.MathJax) MathJax.typesetPromise(); }
+
+        function generateTests() {
+            const r = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+            return [
+                { q: `$(-${r(2,5)}) + (+${r(6,9)}) \\times (-2)$`, a: -Math.abs(r(2,5)) }, // 仮の計算式
+                { q: `$3x - 7 = 11$ の $x$ は？`, a: 6 },
+                { q: `$x + y = 10, x - y = 2$ の $x$ は？`, a: 6 },
+                { q: "$\\frac{x}{2} + \\frac{y}{3} = 5, x - y = 0$ の $x$ は？", a: 6 },
+                { q: `$2(x-3) = 4x+8$ の $x$ は？`, a: -7 }
+            ];
+        }
 
         async function login() {
             user = document.getElementById("uname").value;
             const password = document.getElementById("pass").value;
-            const res = await fetch("/api/auth", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({username: user, password}) });
-            const result = await res.json();
+            if(!user) return alert("名前を入れてね");
+            await fetch("/api/signup", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({username: user, password}) });
+            testQuestions = generateTests();
             document.getElementById("auth-area").classList.add("hidden");
-            if (result.data.hasTakenTest) { showMenu(`おかえりなさい！前回の続きからどうぞ。`); } 
-            else { 
-                testQuestions = [{q: "$3x-7=11$", a: 6}, {q: "$x+y=10, x-y=2$ の $x$", a: 6}, {q: "$2x=10$", a: 5}, {q: "$x+5=10$", a: 5}, {q: "$10-x=5$", a: 5}];
-                document.getElementById("test-area").classList.remove("hidden");
-                showTest();
-            }
+            document.getElementById("test-area").classList.remove("hidden");
+            showTest();
         }
 
         function showTest() {
@@ -86,57 +79,41 @@
         }
 
         async function nextTestQ() {
-            if(document.getElementById("test-ans").value == testQuestions[currentIdx].a) score++;
+            const ans = document.getElementById("test-ans").value;
+            if(ans == testQuestions[currentIdx].a) score++;
             currentIdx++;
-            if(currentIdx < 5) { document.getElementById("test-ans").value = ""; showTest(); }
-            else {
+            if(currentIdx < 5) {
+                document.getElementById("test-ans").value = "";
+                showTest();
+            } else {
                 const res = await fetch("/api/finish-test", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({username: user, score}) });
-                const data = await res.json();
-                showMenu(`診断結果：あなたは「${data.unit}」から始めるのがおすすめです！`);
+                alert("診断完了！学習を始めましょう。");
+                document.getElementById("test-area").classList.add("hidden");
+                document.getElementById("study-area").classList.remove("hidden");
+                loadQuestion();
             }
-        }
-
-        function showMenu(msg) {
-            document.getElementById("test-area").classList.add("hidden");
-            document.getElementById("menu-area").classList.remove("hidden");
-            document.getElementById("recommend-text").innerText = msg;
-        }
-
-        function selectGenre(unit) {
-            selectedUnit = unit;
-            document.getElementById("menu-area").classList.add("hidden");
-            document.getElementById("count-area").classList.remove("hidden");
-        }
-
-        function startStudy(count) {
-            targetCount = count; solvedCount = 0;
-            document.getElementById("count-area").classList.add("hidden");
-            document.getElementById("study-area").classList.remove("hidden");
-            loadQuestion();
         }
 
         async function loadQuestion() {
-            if(solvedCount >= targetCount) {
-                alert("特訓完了！お疲れ様でした。");
-                location.reload(); return;
-            }
-            document.getElementById("q-text").innerText = "AIが問題を生成中...";
+            document.getElementById("q-text").innerText = "AIが問題を考えています...";
             document.getElementById("explanation").classList.add("hidden");
             document.getElementById("next-btn").classList.add("hidden");
-            document.getElementById("user-ans").value = "";
-            const res = await fetch("/api/question", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({unit: selectedUnit}) });
+            const res = await fetch("/api/question", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({username: user}) });
             window.currentQ = await res.json();
-            document.getElementById("study-progress").innerText = `${selectedUnit} 特訓中 (${solvedCount+1}/${targetCount})`;
             document.getElementById("q-text").innerHTML = window.currentQ.question;
             renderMath();
         }
 
-        function checkAnswer() {
-            const isCorrect = (document.getElementById("user-ans").value == window.currentQ.answer);
-            document.getElementById("explanation").innerHTML = (isCorrect ? "✅正解！" : "❌残念") + "<br>" + window.currentQ.explanation;
-            document.getElementById("explanation").classList.remove("hidden");
+        async function checkAnswer() {
+            const ans = document.getElementById("user-ans").value;
+            const isCorrect = (ans == window.currentQ.answer);
+            await fetch("/api/record-result", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({username: user, isCorrect}) });
+            if(isCorrect) await fetch("/api/add-xp", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({username: user}) });
+            
+            const exp = document.getElementById("explanation");
+            exp.innerHTML = (isCorrect ? "✅正解！" : "❌残念...") + "<br>" + window.currentQ.explanation;
+            exp.classList.remove("hidden");
             document.getElementById("next-btn").classList.remove("hidden");
-            if(isCorrect) solvedCount++;
             renderMath();
         }
     </script>
