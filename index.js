@@ -82,22 +82,28 @@ app.post("/api/finish-test", async (req, res) => {
 });
 
 // API: AI問題生成
+// API: AI問題生成 (ジャンル指定対応)
 app.post("/api/question", async (req, res) => {
   try {
-    const { username } = req.body;
-    const user = await db.collection("users").doc(username).get();
-    const unit = MATH_LEVELS[user.data().level];
+    // フロントから送られてきたジャンル（unit）を受け取る
+    const { unit } = req.body; 
+    
     const prompt = `数学教師として、${unit}の問題を1問作成してください。
     【重要ルール】
-    1. 数式は必ず $ で囲む LaTeX 形式にすること。
-    2. JavaScriptのエスケープ対策のため、バックスラッシュは必ず2重（\\\\）にすること（例：\\\\times, \\\\frac）。
+    1. 数式は必ず $ で囲む LaTeX 形式。
+    2. JavaScriptのエスケープ対策のため、バックスラッシュは必ず2重（\\\\）にする。
     3. 返答は以下のJSON形式のみ。
     {"question": "問題文", "answer": "数値のみ", "explanation": "解説"}`;
+
     const result = await model.generateContent(prompt);
     const responseText = result.response.text().replace(/```json|```/g, "").trim();
     res.json(JSON.parse(responseText));
-  } catch (e) { res.status(500).json({ error: "AI生成失敗" }); }
+  } catch (e) { 
+    console.error(e);
+    res.status(500).json({ error: "AI生成失敗" }); 
+  }
 });
+
 
 // 502エラー回避のための '0.0.0.0' 指定
 app.listen(port, "0.0.0.0", () => {
