@@ -119,19 +119,36 @@
             updateMath();
         }
 
-        async function nextTestQ() {
-            // ここに正解判定（実際はサーバー側へ送るのが理想ですが、今回はフロントで簡略化）
+                async function nextTestQ() {
+            const ans = document.getElementById("test-ans").value.trim();
+            
+            // 1. 正解判定（入力と、問題データにある正解 'a' を比較）
+            // 全角で入力されても大丈夫なように、数値として比較するのがコツです
+            if (Number(ans) === Number(testQuestions[currentTestIdx].a)) {
+                testScore++;
+            }
+
             currentTestIdx++;
-            if(currentTestIdx < testQuestions.length) {
+
+            // 2. 次の問題へ行くか、練習モードへ行くか
+            if (currentTestIdx < testQuestions.length) {
                 document.getElementById("test-ans").value = "";
                 showTestQuestion();
             } else {
-                // スコア固定で次へ（本当は計算が必要）
-                const res = await fetch("/api/finish-test", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({username: user, score: 3}) });
+                // 全5問終了！結果をサーバーに送って練習モードへ
+                const res = await fetch("/api/finish-test", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({username: user, score: testScore})
+                });
                 const data = await res.json();
+                
+                alert(`診断完了！5問中 ${testScore} 問正解でした。レベル ${data.level} から練習開始です！`);
+                
+                // 画面切り替え：診断エリアを隠して、練習エリア（study-area）を表示
                 document.getElementById("test-area").classList.add("hidden");
                 document.getElementById("study-area").classList.remove("hidden");
-                loadQuestion();
+                loadQuestion(); // 練習モードの第1問をロード
             }
         }
 
