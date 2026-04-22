@@ -66,170 +66,133 @@
     </div>
 
     <script>
-        let user = "";
-        let testQuestions = [];
-        let currentIdx = 0;
-        let score = 0;
-let selectedUnit = ""; // 選んだジャンル
-let targetCount = 0;   // 目標の問題数
-let solvedCount = 0;   // 今何問目か
-let isSignupMode = false;
+<script>
+    let user = "";
+    let testQuestions = [];
+    let currentIdx = 0;
+    let score = 0;
+    let selectedUnit = "";
+    let targetCount = 0;
+    let solvedCount = 0;
+    let isSignupMode = false;
 
-function toggleAuthMode() {
-    isSignupMode = !isSignupMode;
-    document.getElementById("auth-title").innerText = isSignupMode ? "新規登録" : "ログイン";
-    document.getElementById("auth-btn").innerText = isSignupMode ? "登録して開始" : "ログイン";
-}
+    function renderMath() { if(window.MathJax) MathJax.typesetPromise(); }
 
-async function handleAuth() {
-    const username = document.getElementById("uname").value;
-    const password = document.getElementById("pass").value;
-    const endpoint = isSignupMode ? "/api/signup" : "/api/login";
-
-    const res = await fetch(endpoint, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ username, password })
-    });
-
-if (res.ok) {
-    user = username; // currentUser ではなく user に代入（重要！）
-    testQuestions = generateTests(); // ここで問題を作成
-        document.getElementById("auth-area").classList.add("hidden");
-        document.getElementById("test-area").classList.remove("hidden");
-        showTest();
-    } else {
-        const err = await res.json();
-        alert(err.error);
+    function toggleAuthMode() {
+        isSignupMode = !isSignupMode;
+        document.getElementById("auth-title").innerText = isSignupMode ? "新規登録" : "ログイン";
+        document.getElementById("auth-btn").innerText = isSignupMode ? "登録して開始" : "ログイン";
     }
-}
-        function renderMath() { if(window.MathJax) MathJax.typesetPromise(); }
 
-function generateTests() {
-    // 診断テスト用の5問をセットします
-    return [
-        { q: "$(-3) + (+8)$", a: 5 },
-        { q: "$(-2) \\times (-5)$", a: 10 },
-        { q: "$3x - 7 = 11$ の $x$", a: 6 },
-        { q: "$x + y = 10, x - y = 2$ の $x$", a: 6 },
-        { q: "$-4x = 20$ の $x$", a: -5 }
-    ];
-}
+    async function handleAuth() {
+        const username = document.getElementById("uname").value;
+        const password = document.getElementById("pass").value;
+        const endpoint = isSignupMode ? "/api/signup" : "/api/login";
 
-        async function login() {
-            user = document.getElementById("uname").value;
-            const password = document.getElementById("pass").value;
-            if(!user) return alert("名前を入れてね");
-            await fetch("/api/signup", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({username: user, password}) });
-            testQuestions = generateTests();
+        const res = await fetch(endpoint, {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ username, password })
+        });
+
+        if (res.ok) {
+            user = username; // user変数をセット
+            testQuestions = generateTests(); // 診断リスト作成
             document.getElementById("auth-area").classList.add("hidden");
             document.getElementById("test-area").classList.remove("hidden");
             showTest();
+        } else {
+            const err = await res.json();
+            alert(err.error);
         }
-
-        function showTest() {
-            document.getElementById("test-progress").innerText = `診断テスト ${currentIdx+1}/5`;
-            document.getElementById("test-q-text").innerHTML = testQuestions[currentIdx].q;
-            renderMath();
-        }
-
-async function nextTestQ() {
-    const ans = document.getElementById("test-ans").value;
-    
-    // 現在の問題の正解判定
-    if(ans == testQuestions[currentIdx].a) {
-        score++;
     }
 
-    // ★重要：先にカウントを増やし、5問終わったかどうかを判定する
-    currentIdx++; 
+    function generateTests() {
+        return [
+            { q: "$(-3) + (+8)$", a: 5 },
+            { q: "$(-2) \\times (-5)$", a: 10 },
+            { q: "$3x - 7 = 11$ の $x$", a: 6 },
+            { q: "$x + y = 10, x - y = 2$ の $x$", a: 6 },
+            { q: "$-4x = 20$ の $x$", a: -5 }
+        ];
+    }
 
-    if(currentIdx < 5) {
-        // まだ問題がある場合
-        document.getElementById("test-ans").value = "";
-        showTest();
-    } else {
-        // 5問すべて解き終わった場合
-        try {
+    function showTest() {
+        document.getElementById("test-progress").innerText = `診断テスト ${currentIdx+1}/5`;
+        document.getElementById("test-q-text").innerHTML = testQuestions[currentIdx].q;
+        renderMath();
+    }
+
+    async function nextTestQ() {
+        const ans = document.getElementById("test-ans").value;
+        if(ans == testQuestions[currentIdx].a) score++;
+        currentIdx++; 
+
+        if(currentIdx < 5) {
+            document.getElementById("test-ans").value = "";
+            showTest();
+        } else {
             const res = await fetch("/api/finish-test", { 
                 method: "POST", 
                 headers: {"Content-Type":"application/json"}, 
                 body: JSON.stringify({username: user, score}) 
             });
             const data = await res.json();
-            
-            // 診断画面を隠してメニューを表示
             document.getElementById("test-area").classList.add("hidden");
             document.getElementById("menu-area").classList.remove("hidden");
             document.getElementById("recommend-text").innerText = `判定完了！Lv.${data.level}がおすすめです。`;
-        } catch (e) {
-            console.error("通信エラー:", e);
-            alert("結果の送信に失敗しました。サーバーのログを確認してください。");
         }
     }
-}
-        /* --- loadQuestion 関数の中をこれに差し替え --- */
-async function loadQuestion() {
-    if(solvedCount >= targetCount && targetCount !== 0) {
-        alert(`${targetCount}問の特訓完了！お疲れ様でした。`);
-        location.reload(); 
-        return;
+
+    async function loadQuestion() {
+        if(solvedCount >= targetCount && targetCount !== 0) {
+            alert(`${targetCount}問の特訓完了！お疲れ様でした。`);
+            location.reload(); 
+            return;
+        }
+
+        document.getElementById("q-text").innerText = "AIが問題を考えています...";
+        document.getElementById("explanation").classList.add("hidden");
+        document.getElementById("next-btn").classList.add("hidden");
+        document.getElementById("user-ans").value = "";
+
+        const res = await fetch("/api/question", { 
+            method: "POST", 
+            headers: {"Content-Type":"application/json"}, 
+            body: JSON.stringify({username: user, unit: selectedUnit}) 
+        });
+
+        // ここがポイント：1回だけjsonを受け取って表示
+        window.currentQ = await res.json();
+        document.getElementById("q-text").innerHTML = window.currentQ.question;
+        renderMath();
     }
 
-    document.getElementById("q-text").innerText = "AIが問題を考えています...";
-    document.getElementById("explanation").classList.add("hidden");
-    document.getElementById("next-btn").classList.add("hidden");
-    document.getElementById("user-ans").value = "";
+    async function checkAnswer() {
+        const ans = document.getElementById("user-ans").value;
+        const isCorrect = (ans == window.currentQ.answer);
+        if(isCorrect) solvedCount++;
 
-    const res = await fetch("/api/question", { 
-        method: "POST", 
-        headers: {"Content-Type":"application/json"}, 
-        body: JSON.stringify({username: user, unit: selectedUnit}) 
-    });
-
-    // ★ 1回だけ json を受け取って window.currentQ に入れる
-    window.currentQ = await res.json();
-
-    // ★ currentAIQuestion ではなく window.currentQ を使う
-    document.getElementById("q-text").innerHTML = window.currentQ.question;
-    renderMath();
-}
-}
-async function checkAnswer() {
-    const ans = document.getElementById("user-ans").value;
-    const isCorrect = (ans == window.currentQ.answer);
-    
-    // --- 追加：正解したらカウントアップ ---
-    if(isCorrect) {
-        solvedCount++;
+        const exp = document.getElementById("explanation");
+        exp.innerHTML = (isCorrect ? "✅正解！" : "❌残念...") + "<br>" + window.currentQ.explanation;
+        exp.classList.remove("hidden");
+        document.getElementById("next-btn").classList.remove("hidden");
+        renderMath();
     }
 
-    await fetch("/api/record-result", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({username: user, isCorrect}) });
-    if(isCorrect) await fetch("/api/add-xp", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({username: user}) });
-    
-    const exp = document.getElementById("explanation");
-    exp.innerHTML = (isCorrect ? "✅正解！" : "❌残念...") + "<br>" + window.currentQ.explanation;
-    exp.classList.remove("hidden");
-    document.getElementById("next-btn").classList.remove("hidden");
-    renderMath();
-}
-// ジャンルを選んだら問題数選択へ
-function selectGenre(unit) {
-    selectedUnit = unit;
-    document.getElementById("menu-area").classList.add("hidden");
-    document.getElementById("count-area").classList.remove("hidden");
-}
+    function selectGenre(unit) {
+        selectedUnit = unit;
+        document.getElementById("menu-area").classList.add("hidden");
+        document.getElementById("count-area").classList.remove("hidden");
+    }
 
-// 問題数を選んだら学習スタート
-function startStudy(count) {
-    targetCount = count;
-    solvedCount = 0;
-    document.getElementById("count-area").classList.add("hidden");
-    document.getElementById("study-area").classList.remove("hidden");
-    loadQuestion();
-}
-
-
-    </script>
+    function startStudy(count) {
+        targetCount = count;
+        solvedCount = 0;
+        document.getElementById("count-area").classList.add("hidden");
+        document.getElementById("study-area").classList.remove("hidden");
+        loadQuestion();
+    }
+</script>
 </body>
 </html>
