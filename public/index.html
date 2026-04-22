@@ -20,11 +20,15 @@
     <div class="card">
         <h2 style="color:#0061da; text-align:center;">AI数学マスター</h2>
         
-        <div id="auth-area">
-            <input id="uname" placeholder="名前">
-            <input id="pass" type="password" placeholder="パスワード">
-            <button onclick="login()">ログイン</button>
-        </div>
+       <div id="auth-area">
+    <h3 id="auth-title">ログイン</h3>
+    <input id="uname" placeholder="名前">
+    <input id="pass" type="password" placeholder="パスワード">
+    <button id="auth-btn" onclick="handleAuth()">ログイン</button>
+    <button class="sub-btn" onclick="toggleAuthMode()" style="font-size: 0.8rem; background: #666;">
+        アカウント作成はこちら
+    </button>
+</div>
 
         <div id="test-area" class="hidden">
             <p id="test-progress"></p>
