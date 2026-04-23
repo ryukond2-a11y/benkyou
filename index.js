@@ -81,7 +81,7 @@ app.post("/api/question", async (req, res) => {
     const result = await model.generateContent(prompt);
     let text = result.response.text().replace(/```json|```/g, "").trim();
 
-    // ★バックスラッシュを安全にする魔法
+    // ★ここが重要！バックスラッシュが壊れるのを防ぎます
     text = text.replace(/\\/g, "\\\\").replace(/\\\\\\\\/g, "\\\\");
 
     const jsonStart = text.indexOf('{');
@@ -90,7 +90,7 @@ app.post("/api/question", async (req, res) => {
 
     res.json(JSON.parse(cleanJson));
   } catch (e) {
-    console.error("AI Error:", e);
+    console.error("AI生成エラー:", e);
     res.status(500).json({ error: "AI生成失敗" });
   }
 });
