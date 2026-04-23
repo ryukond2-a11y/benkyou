@@ -138,10 +138,11 @@
 
     async function loadQuestion() {
         if(solvedCount >= targetCount && targetCount !== 0) {
-            alert(`${targetCount}問の特訓完了！`);
+            alert(`${targetCount}問の特訓完了！お疲れ様でした。`);
             location.reload(); 
             return;
         }
+
         const qText = document.getElementById("q-text");
         qText.innerText = "AIが問題を考えています...";
         document.getElementById("explanation").classList.add("hidden");
@@ -149,21 +150,32 @@
         document.getElementById("user-ans").value = "";
 
         try {
+            // カッコや記号のズレを修正しました
             const res = await fetch("/api/question", { 
                 method: "POST", 
                 headers: {"Content-Type":"application/json"}, 
                 body: JSON.stringify({unit: selectedUnit}) 
             });
-            if (!res.ok) throw new Error();
-            window.currentQ = await res.json();
-            qText.innerHTML = window.currentQ.question;
-            renderMath();
+
+            if (!res.ok) throw new Error("サーバーエラー");
+
+            const data = await res.json();
+            
+            // dataが正しく取得できたかチェックしてから代入
+            if (data && data.question) {
+                window.currentQ = data;
+                qText.innerHTML = data.question;
+                renderMath();
+            } else {
+                throw new Error("データ形式エラー");
+            }
+
         } catch (e) {
-            qText.innerHTML = `<span style="color:red;">エラー。もう一度「次の問題」を押してください。</span>`;
+            console.error("読み込み失敗:", e);
+            qText.innerHTML = `<span style="color:red;">エラーが発生しました。もう一度「次の問題」を押してください。</span>`;
             document.getElementById("next-btn").classList.remove("hidden");
         }
     }
-
     function checkAnswer() {
         const ans = document.getElementById("user-ans").value;
         if (!window.currentQ) return;
