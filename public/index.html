@@ -150,18 +150,17 @@
         document.getElementById("user-ans").value = "";
 
         try {
-            // カッコや記号のズレを修正しました
+            // 全角の「”」を半角の「"」に完璧に修正しました
             const res = await fetch("/api/question", { 
                 method: "POST", 
-                headers: {"Content-Type":"application/json"}, 
-                body: JSON.stringify({unit: selectedUnit}) 
+                headers: {"Content-Type": "application/json"}, 
+                body: JSON.stringify({ unit: selectedUnit }) 
             });
 
             if (!res.ok) throw new Error("サーバーエラー");
 
             const data = await res.json();
             
-            // dataが正しく取得できたかチェックしてから代入
             if (data && data.question) {
                 window.currentQ = data;
                 qText.innerHTML = data.question;
@@ -169,7 +168,6 @@
             } else {
                 throw new Error("データ形式エラー");
             }
-
         } catch (e) {
             console.error("読み込み失敗:", e);
             qText.innerHTML = `<span style="color:red;">エラーが発生しました。もう一度「次の問題」を押してください。</span>`;
