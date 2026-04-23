@@ -107,16 +107,15 @@
         }
     }
 
-    function generateTests() {
-        return [
-            { q: "$(-3) + (+8)$", a: 5 },
-            { q: "$(-2) \\times (-5)$", a: 10 },
-            { q: "$3x - 7 = 11$ の $x$", a: 6 },
-            { q: "$x + y = 10, x - y = 2$ の $x$", a: 6 },
-            { q: "$-4x = 20$ の $x$", a: -5 }
-        ];
-    }
-
+function generateTests() {
+    return [
+        { q: "$(-3) + (+8) =$ ", a: 5 },
+        { q: "$(-2) \\times (-5) =$ ", a: 10 },
+        { q: "$3x - 7 = 11$ を解け", a: 6 },
+        { q: "$x + y = 10, x - y = 2$ の $x$ の値", a: 6 },
+        { q: "$-4x = 20$ を解け", a: -5 }
+    ];
+}
     function showTest() {
         document.getElementById("test-progress").innerText = `診断テスト ${currentIdx+1}/5`;
         document.getElementById("test-q-text").innerHTML = testQuestions[currentIdx].q;
