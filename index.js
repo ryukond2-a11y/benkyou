@@ -76,19 +76,18 @@ app.post("/api/finish-test", async (req, res) => {
 app.post("/api/question", async (req, res) => {
   try {
     const { unit } = req.body;
-    const prompt = `数学教師として、中学数学の「${unit}」の問題を1問作成してください。
-    【重要】1. 数式は $ で囲む LaTeX。 2. バックスラッシュは2重（\\\\）にする。
-    3. 返答は必ず以下のJSON形式のみで、挨拶は一切不要です： {"question": "問題", "answer": "数値", "explanation": "解説"}`;
+    const prompt = `数学教師として、中学数学の「${unit}」の問題を1問作成。返答は必ず以下のJSON形式のみ。挨拶不要。 {"question": "問題", "answer": "数値", "explanation": "解説"}`;
     
     const result = await model.generateContent(prompt);
-    let responseText = result.response.text();
+    let text = result.response.text().replace(/```json|```/g, "").trim();
 
-    // ★ 修正ポイント：JSON以外の部分（```json とか 挨拶）を力技で削る
-    const jsonStart = responseText.indexOf('{');
-    const jsonEnd = responseText.lastIndexOf('}') + 1;
-    const cleanJson = responseText.substring(jsonStart, jsonEnd);
-    
-    console.log("AI Response:", cleanJson); // ログで確認できるようにする
+    // ★バックスラッシュを安全にする魔法
+    text = text.replace(/\\/g, "\\\\").replace(/\\\\\\\\/g, "\\\\");
+
+    const jsonStart = text.indexOf('{');
+    const jsonEnd = text.lastIndexOf('}') + 1;
+    const cleanJson = text.substring(jsonStart, jsonEnd);
+
     res.json(JSON.parse(cleanJson));
   } catch (e) {
     console.error("AI Error:", e);
