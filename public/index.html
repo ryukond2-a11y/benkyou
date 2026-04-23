@@ -85,35 +85,29 @@
 
     async function handleAuth() {
         const username = document.getElementById("uname").value;
-        const password = document.getElementById("pass").value;
         const endpoint = isSignupMode ? "/api/signup" : "/api/login";
-
-        const res = await fetch(endpoint, {
-            method: "POST",
-            headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({ username, password })
-        });
-
-        if (res.ok) {
-            user = username;
-            testQuestions = generateTests();
-            document.getElementById("auth-area").classList.add("hidden");
-            document.getElementById("test-area").classList.remove("hidden");
-            showTest();
-        } else {
-            const err = await res.json();
-            alert(err.error);
-        }
-    }
-
-    function generateTests() {
-        return [
-            { q: "$(-3) + (+8) =$ ", a: 5 },
-            { q: "$(-2) \\times (-5) =$ ", a: 10 },
-            { q: "$3x - 7 = 11$ を解け", a: 6 },
-            { q: "$x + y = 10, x - y = 2$ の $x$ の値", a: 6 },
-            { q: "$-4x = 20$ を解け", a: -5 }
-        ];
+        try {
+            const res = await fetch(endpoint, {
+                method: "POST",
+                headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ username })
+            });
+            if (res.ok) {
+                user = username;
+                testQuestions = [
+                    { q: "$(-3) + (+8) =$ ", a: 5 },
+                    { q: "$(-2) \\times (-5) =$ ", a: 10 },
+                    { q: "$3x - 7 = 11$ の $x$", a: 6 },
+                    { q: "$x + y = 10, x - y = 2$ の $x$", a: 6 },
+                    { q: "$-4x = 20$ の $x$", a: -5 }
+                ];
+                document.getElementById("auth-area").classList.add("hidden");
+                document.getElementById("test-area").classList.remove("hidden");
+                showTest();
+            } else {
+                alert("ログインに失敗しました。サーバーの状態を確認してください。");
+            }
+        } catch (e) { alert("通信エラーが発生しました"); }
     }
 
     function showTest() {
@@ -126,23 +120,17 @@
         const ans = document.getElementById("test-ans").value;
         if(ans == testQuestions[currentIdx].a) score++;
         currentIdx++; 
-
         if(currentIdx < 5) {
             document.getElementById("test-ans").value = "";
             showTest();
         } else {
-            try {
-                const res = await fetch("/api/finish-test", { 
-                    method: "POST", 
-                    headers: {"Content-Type":"application/json"}, 
-                    body: JSON.stringify({username: user, score}) 
-                });
-                const data = await res.json();
-                document.getElementById("recommend-text").innerText = `判定完了！Lv.${data.level}がおすすめです。`;
-            } catch (e) {
-                console.error("保存失敗:", e);
-                document.getElementById("recommend-text").innerText = `判定完了！`;
-            }
+            const res = await fetch("/api/finish-test", { 
+                method: "POST", 
+                headers: {"Content-Type":"application/json"}, 
+                body: JSON.stringify({username: user, score}) 
+            });
+            const data = await res.json();
+            document.getElementById("recommend-text").innerText = `判定完了！Lv.${data.level}がおすすめです。`;
             document.getElementById("test-area").classList.add("hidden");
             document.getElementById("menu-area").classList.remove("hidden");
         }
@@ -150,11 +138,10 @@
 
     async function loadQuestion() {
         if(solvedCount >= targetCount && targetCount !== 0) {
-            alert(`${targetCount}問の特訓完了！お疲れ様でした。`);
+            alert(`${targetCount}問の特訓完了！`);
             location.reload(); 
             return;
         }
-
         const qText = document.getElementById("q-text");
         qText.innerText = "AIが問題を考えています...";
         document.getElementById("explanation").classList.add("hidden");
@@ -165,35 +152,23 @@
             const res = await fetch("/api/question", { 
                 method: "POST", 
                 headers: {"Content-Type":"application/json"}, 
-                body: JSON.stringify({username: user, unit: selectedUnit}) 
+                body: JSON.stringify({unit: selectedUnit}) 
             });
-
-            if (!res.ok) throw new Error('サーバーエラー');
-
-            const data = await res.json();
-            
-            // dataの中身が正常な時だけ代入する（(index):164のエラー対策）
-            if (data && data.question) {
-                window.currentQ = data;
-                qText.innerHTML = data.question;
-                renderMath();
-            } else {
-                throw new Error('AIの回答が空です');
-            }
+            if (!res.ok) throw new Error();
+            window.currentQ = await res.json();
+            qText.innerHTML = window.currentQ.question;
+            renderMath();
         } catch (e) {
-            console.error("読み込み失敗:", e);
-            qText.innerHTML = `<span style="color:red;">エラーが発生しました。もう一度「次の問題」を押してください。</span>`;
+            qText.innerHTML = `<span style="color:red;">エラー。もう一度「次の問題」を押してください。</span>`;
             document.getElementById("next-btn").classList.remove("hidden");
         }
     }
 
-    async function checkAnswer() {
+    function checkAnswer() {
         const ans = document.getElementById("user-ans").value;
         if (!window.currentQ) return;
-
         const isCorrect = (ans == window.currentQ.answer);
         if(isCorrect) solvedCount++;
-
         const exp = document.getElementById("explanation");
         exp.innerHTML = (isCorrect ? "✅正解！" : "❌残念...") + "<br>" + window.currentQ.explanation;
         exp.classList.remove("hidden");
