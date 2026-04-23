@@ -150,10 +150,10 @@
         document.getElementById("user-ans").value = "";
 
         try {
-            // 全角の「”」を半角の「"」に完璧に修正しました
+            // 全角の “ を確実に排除した、完璧な半角コードです
             const res = await fetch("/api/question", { 
                 method: "POST", 
-                headers: {"Content-Type": "application/json"}, 
+                headers: { "Content-Type": "application/json" }, 
                 body: JSON.stringify({ unit: selectedUnit }) 
             });
 
@@ -168,6 +168,7 @@
             } else {
                 throw new Error("データ形式エラー");
             }
+
         } catch (e) {
             console.error("読み込み失敗:", e);
             qText.innerHTML = `<span style="color:red;">エラーが発生しました。もう一度「次の問題」を押してください。</span>`;
