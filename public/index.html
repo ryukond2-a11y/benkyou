@@ -9,26 +9,25 @@
     </script>
     <style>
         body { font-family: sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .card { background: white; padding: 2rem; border-radius: 15px; shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
         .hidden { display: none; }
         input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #0061da; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
-        #q-text { font-size: 20px; text-align: center; margin: 20px 0; }
+        button { width: 100%; padding: 12px; background: #0061da; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin-top: 5px; }
+        #q-text, #test-q-text { font-size: 20px; text-align: center; margin: 20px 0; min-height: 1.5em; }
+        .sub-btn { background: #666; font-size: 0.8rem; }
     </style>
 </head>
 <body>
     <div class="card">
         <h2 style="color:#0061da; text-align:center;">AI数学マスター</h2>
         
-       <div id="auth-area">
-    <h3 id="auth-title">ログイン</h3>
-    <input id="uname" placeholder="名前">
-    <input id="pass" type="password" placeholder="パスワード">
-    <button id="auth-btn" onclick="handleAuth()">ログイン</button>
-    <button class="sub-btn" onclick="toggleAuthMode()" style="font-size: 0.8rem; background: #666;">
-        アカウント作成はこちら
-    </button>
-</div>
+        <div id="auth-area">
+            <h3 id="auth-title">ログイン</h3>
+            <input id="uname" placeholder="名前">
+            <input id="pass" type="password" placeholder="パスワード">
+            <button id="auth-btn" onclick="handleAuth()">ログイン</button>
+            <button class="sub-btn" onclick="toggleAuthMode()">アカウント作成はこちら</button>
+        </div>
 
         <div id="test-area" class="hidden">
             <p id="test-progress"></p>
@@ -36,170 +35,165 @@
             <input id="test-ans" placeholder="答えを入力">
             <button onclick="nextTestQ()">次へ</button>
         </div>
-<div id="menu-area" class="hidden">
-    <div style="background:#fff3cd; padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #ffeeba;">
-        <p id="recommend-text" style="font-weight:bold; margin:0;"></p>
-    </div>
-    <p>挑戦するジャンルを選んでください：</p>
-    <button onclick="selectGenre('正負の数')" style="background:#6c757d; margin-bottom:5px;">Lv.1 正負の数</button>
-    <button onclick="selectGenre('一次方程式')" style="background:#6c757d; margin-bottom:5px;">Lv.2 一次方程式</button>
-    <button onclick="selectGenre('方程式の応用')" style="background:#6c757d; margin-bottom:5px;">Lv.3 方程式の応用</button>
-    <button onclick="selectGenre('連立方程式')" style="background:#6c757d; margin-bottom:5px;">Lv.4 連立方程式</button>
-    <button onclick="selectGenre('連立方程式の応用')" style="background:#6c757d; margin-bottom:5px;">Lv.5 連立方程式の応用</button>
-</div>
 
-<div id="count-area" class="hidden">
-    <p id="selected-genre-name" style="font-weight:bold;"></p>
-    <p>何問解きますか？</p>
-    <button onclick="startStudy(3)" style="background:#28a745; margin-bottom:5px;">3問</button>
-    <button onclick="startStudy(5)" style="background:#28a745; margin-bottom:5px;">5問</button>
-    <button onclick="startStudy(10)" style="background:#28a745; margin-bottom:5px;">10問</button>
-</div>
+        <div id="menu-area" class="hidden">
+            <div style="background:#fff3cd; padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #ffeeba;">
+                <p id="recommend-text" style="font-weight:bold; margin:0;"></p>
+            </div>
+            <p>挑戦するジャンルを選んでください：</p>
+            <button onclick="selectGenre('正負の数')" style="background:#6c757d;">Lv.1 正負の数</button>
+            <button onclick="selectGenre('一次方程式')" style="background:#6c757d;">Lv.2 一次方程式</button>
+            <button onclick="selectGenre('方程式の応用')" style="background:#6c757d;">Lv.3 方程式の応用</button>
+            <button onclick="selectGenre('連立方程式')" style="background:#6c757d;">Lv.4 連立方程式</button>
+            <button onclick="selectGenre('連立方程式の応用')" style="background:#6c757d;">Lv.5 連立方程式の応用</button>
+        </div>
+
+        <div id="count-area" class="hidden">
+            <p id="selected-genre-name" style="font-weight:bold;"></p>
+            <p>何問解きますか？</p>
+            <button onclick="startStudy(3)" style="background:#28a745;">3問</button>
+            <button onclick="startStudy(5)" style="background:#28a745;">5問</button>
+            <button onclick="startStudy(10)" style="background:#28a745;">10問</button>
+        </div>
 
         <div id="study-area" class="hidden">
             <div id="q-text"></div>
             <input id="user-ans" placeholder="答えを入力">
             <button id="submit-btn" onclick="checkAnswer()">回答する</button>
-            <div id="explanation" class="hidden" style="background:#eee; padding:10px; margin-top:10px;"></div>
-            <button id="next-btn" class="hidden" onclick="loadQuestion()" style="background:green; margin-top:10px;">次の問題</button>
+            <div id="explanation" class="hidden" style="background:#eee; padding:10px; margin-top:10px; border-radius: 5px;"></div>
+            <button id="next-btn" class="hidden" onclick="loadQuestion()" style="background:green;">次の問題</button>
         </div>
     </div>
 
-<script>
-    let user = "";
-    let testQuestions = [];
-    let currentIdx = 0;
-    let score = 0;
-    let selectedUnit = "";
-    let targetCount = 0;
-    let solvedCount = 0;
-    let isSignupMode = false;
+    <script>
+        let user = "";
+        let testQuestions = [];
+        let currentIdx = 0;
+        let score = 0;
+        let selectedUnit = "";
+        let targetCount = 0;
+        let solvedCount = 0;
+        let isSignupMode = false;
 
-    function renderMath() { if(window.MathJax) MathJax.typesetPromise(); }
+        function renderMath() { if(window.MathJax) MathJax.typesetPromise(); }
 
-    function toggleAuthMode() {
-        isSignupMode = !isSignupMode;
-        document.getElementById("auth-title").innerText = isSignupMode ? "新規登録" : "ログイン";
-        document.getElementById("auth-btn").innerText = isSignupMode ? "登録して開始" : "ログイン";
-    }
+        function toggleAuthMode() {
+            isSignupMode = !isSignupMode;
+            document.getElementById("auth-title").innerText = isSignupMode ? "新規登録" : "ログイン";
+            document.getElementById("auth-btn").innerText = isSignupMode ? "登録して開始" : "ログイン";
+        }
 
-    async function handleAuth() {
-        const username = document.getElementById("uname").value;
-        const endpoint = isSignupMode ? "/api/signup" : "/api/login";
-        try {
-            const res = await fetch(endpoint, {
-                method: "POST",
-                headers: {"Content-Type":"application/json"},
-                body: JSON.stringify({ username })
-            });
-            if (res.ok) {
-                user = username;
-                testQuestions = [
-                    { q: "$(-3) + (+8) =$ ", a: 5 },
-                    { q: "$(-2) \\times (-5) =$ ", a: 10 },
-                    { q: "$3x - 7 = 11$ の $x$", a: 6 },
-                    { q: "$x + y = 10, x - y = 2$ の $x$", a: 6 },
-                    { q: "$-4x = 20$ の $x$", a: -5 }
-                ];
-                document.getElementById("auth-area").classList.add("hidden");
-                document.getElementById("test-area").classList.remove("hidden");
+        async function handleAuth() {
+            const username = document.getElementById("uname").value;
+            const password = document.getElementById("pass").value;
+            if(!username || !password) return alert("名前とパスワードを入れてね");
+
+            const endpoint = isSignupMode ? "/api/signup" : "/api/login";
+            try {
+                const res = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {"Content-Type":"application/json"},
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (res.ok) {
+                    user = username;
+                    testQuestions = generateTests();
+                    document.getElementById("auth-area").classList.add("hidden");
+                    document.getElementById("test-area").classList.remove("hidden");
+                    showTest();
+                } else {
+                    const err = await res.json();
+                    alert(err.error);
+                }
+            } catch (e) { alert("サーバーに接続できません"); }
+        }
+
+        function generateTests() {
+            return [
+                { q: "$(-3) + (+8)$", a: 5 },
+                { q: "$(-2) \\times (-5)$", a: 10 },
+                { q: "$3x - 7 = 11$ の $x$", a: 6 },
+                { q: "$x + y = 10, x - y = 2$ の $x$", a: 6 },
+                { q: "$-4x = 20$ の $x$", a: -5 }
+            ];
+        }
+
+        function showTest() {
+            document.getElementById("test-progress").innerText = `診断テスト ${currentIdx+1}/5`;
+            document.getElementById("test-q-text").innerHTML = testQuestions[currentIdx].q;
+            renderMath();
+        }
+
+        async function nextTestQ() {
+            const ans = document.getElementById("test-ans").value;
+            if(ans == testQuestions[currentIdx].a) score++;
+            currentIdx++;
+
+            if(currentIdx < 5) {
+                document.getElementById("test-ans").value = "";
                 showTest();
             } else {
-                alert("ログインに失敗しました。サーバーの状態を確認してください。");
+                const res = await fetch("/api/finish-test", { 
+                    method: "POST", 
+                    headers: {"Content-Type":"application/json"}, 
+                    body: JSON.stringify({username: user, score}) 
+                });
+                const data = await res.json();
+                document.getElementById("test-area").classList.add("hidden");
+                document.getElementById("menu-area").classList.remove("hidden");
+                document.getElementById("recommend-text").innerText = `判定完了！Lv.${data.level}がおすすめです。`;
             }
-        } catch (e) { alert("通信エラーが発生しました"); }
-    }
-
-    function showTest() {
-        document.getElementById("test-progress").innerText = `診断テスト ${currentIdx+1}/5`;
-        document.getElementById("test-q-text").innerHTML = testQuestions[currentIdx].q;
-        renderMath();
-    }
-
-    async function nextTestQ() {
-        const ans = document.getElementById("test-ans").value;
-        if(ans == testQuestions[currentIdx].a) score++;
-        currentIdx++; 
-        if(currentIdx < 5) {
-            document.getElementById("test-ans").value = "";
-            showTest();
-        } else {
-            const res = await fetch("/api/finish-test", { 
-                method: "POST", 
-                headers: {"Content-Type":"application/json"}, 
-                body: JSON.stringify({username: user, score}) 
-            });
-            const data = await res.json();
-            document.getElementById("recommend-text").innerText = `判定完了！Lv.${data.level}がおすすめです。`;
-            document.getElementById("test-area").classList.add("hidden");
-            document.getElementById("menu-area").classList.remove("hidden");
-        }
-    }
-
-    async function loadQuestion() {
-        if(solvedCount >= targetCount && targetCount !== 0) {
-            alert(`${targetCount}問の特訓完了！お疲れ様でした。`);
-            location.reload(); 
-            return;
         }
 
-        const qText = document.getElementById("q-text");
-        qText.innerText = "AIが問題を考えています...";
-        document.getElementById("explanation").classList.add("hidden");
-        document.getElementById("next-btn").classList.add("hidden");
-        document.getElementById("user-ans").value = "";
+        async function loadQuestion() {
+            if(targetCount !== 0 && solvedCount >= targetCount) {
+                alert(`${targetCount}問の特訓完了！お疲れ様でした。`);
+                location.reload(); 
+                return;
+            }
 
-        try {
-            // 全角の “ を確実に排除した、完璧な半角コードです
+            document.getElementById("q-text").innerText = "AIが問題を考えています...";
+            document.getElementById("explanation").classList.add("hidden");
+            document.getElementById("next-btn").classList.add("hidden");
+            document.getElementById("user-ans").value = "";
+
             const res = await fetch("/api/question", { 
                 method: "POST", 
-                headers: { "Content-Type": "application/json" }, 
-                body: JSON.stringify({ unit: selectedUnit }) 
+                headers: {"Content-Type":"application/json"}, 
+                body: JSON.stringify({username: user, unit: selectedUnit}) 
             });
-
-            if (!res.ok) throw new Error("サーバーエラー");
-
-            const data = await res.json();
-            
-            if (data && data.question) {
-                window.currentQ = data;
-                qText.innerHTML = data.question;
-                renderMath();
-            } else {
-                throw new Error("データ形式エラー");
-            }
-
-        } catch (e) {
-            console.error("読み込み失敗:", e);
-            qText.innerHTML = `<span style="color:red;">エラーが発生しました。もう一度「次の問題」を押してください。</span>`;
-            document.getElementById("next-btn").classList.remove("hidden");
+            window.currentQ = await res.json();
+            document.getElementById("q-text").innerHTML = window.currentQ.question;
+            renderMath();
         }
-    }
-    function checkAnswer() {
-        const ans = document.getElementById("user-ans").value;
-        if (!window.currentQ) return;
-        const isCorrect = (ans == window.currentQ.answer);
-        if(isCorrect) solvedCount++;
-        const exp = document.getElementById("explanation");
-        exp.innerHTML = (isCorrect ? "✅正解！" : "❌残念...") + "<br>" + window.currentQ.explanation;
-        exp.classList.remove("hidden");
-        document.getElementById("next-btn").classList.remove("hidden");
-        renderMath();
-    }
 
-    function selectGenre(unit) {
-        selectedUnit = unit;
-        document.getElementById("menu-area").classList.add("hidden");
-        document.getElementById("count-area").classList.remove("hidden");
-    }
+        async function checkAnswer() {
+            const ans = document.getElementById("user-ans").value;
+            const isCorrect = (ans == window.currentQ.answer);
+            if(isCorrect) solvedCount++;
 
-    function startStudy(count) {
-        targetCount = count;
-        solvedCount = 0;
-        document.getElementById("count-area").classList.add("hidden");
-        document.getElementById("study-area").classList.remove("hidden");
-        loadQuestion();
-    }
-</script>
+            const exp = document.getElementById("explanation");
+            exp.innerHTML = (isCorrect ? "✅正解！" : "❌残念...") + "<br>" + window.currentQ.explanation;
+            exp.classList.remove("hidden");
+            document.getElementById("next-btn").classList.remove("hidden");
+            renderMath();
+        }
+
+        function selectGenre(unit) {
+            selectedUnit = unit;
+            document.getElementById("menu-area").classList.add("hidden");
+            document.getElementById("count-area").classList.remove("hidden");
+            document.getElementById("selected-genre-name").innerText = `ジャンル：${unit}`;
+        }
+
+        function startStudy(count) {
+            targetCount = count;
+            solvedCount = 0;
+            document.getElementById("count-area").classList.add("hidden");
+            document.getElementById("study-area").classList.remove("hidden");
+            loadQuestion();
+        }
+    </script>
 </body>
 </html>
