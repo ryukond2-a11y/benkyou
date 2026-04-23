@@ -65,7 +65,6 @@
         </div>
     </div>
 
-
 <script>
     let user = "";
     let testQuestions = [];
@@ -96,8 +95,8 @@
         });
 
         if (res.ok) {
-            user = username; // user変数をセット
-            testQuestions = generateTests(); // 診断リスト作成
+            user = username;
+            testQuestions = generateTests();
             document.getElementById("auth-area").classList.add("hidden");
             document.getElementById("test-area").classList.remove("hidden");
             showTest();
@@ -107,15 +106,16 @@
         }
     }
 
-function generateTests() {
-    return [
-        { q: "$(-3) + (+8) =$ ", a: 5 },
-        { q: "$(-2) \\times (-5) =$ ", a: 10 },
-        { q: "$3x - 7 = 11$ を解け", a: 6 },
-        { q: "$x + y = 10, x - y = 2$ の $x$ の値", a: 6 },
-        { q: "$-4x = 20$ を解け", a: -5 }
-    ];
-}
+    function generateTests() {
+        return [
+            { q: "$(-3) + (+8) =$ ", a: 5 },
+            { q: "$(-2) \\times (-5) =$ ", a: 10 },
+            { q: "$3x - 7 = 11$ を解け", a: 6 },
+            { q: "$x + y = 10, x - y = 2$ の $x$ の値", a: 6 },
+            { q: "$-4x = 20$ を解け", a: -5 }
+        ];
+    }
+
     function showTest() {
         document.getElementById("test-progress").innerText = `診断テスト ${currentIdx+1}/5`;
         document.getElementById("test-q-text").innerHTML = testQuestions[currentIdx].q;
@@ -131,7 +131,6 @@ function generateTests() {
             document.getElementById("test-ans").value = "";
             showTest();
         } else {
-            // ★ここから下をこの形に確実に書き換えてください
             try {
                 const res = await fetch("/api/finish-test", { 
                     method: "POST", 
@@ -147,7 +146,7 @@ function generateTests() {
             document.getElementById("test-area").classList.add("hidden");
             document.getElementById("menu-area").classList.remove("hidden");
         }
-    } // ←この閉じカッコが抜けていないか注意！
+    }
 
     async function loadQuestion() {
         if(solvedCount >= targetCount && targetCount !== 0) {
@@ -156,25 +155,42 @@ function generateTests() {
             return;
         }
 
-        document.getElementById("q-text").innerText = "AIが問題を考えています...";
+        const qText = document.getElementById("q-text");
+        qText.innerText = "AIが問題を考えています...";
         document.getElementById("explanation").classList.add("hidden");
         document.getElementById("next-btn").classList.add("hidden");
         document.getElementById("user-ans").value = "";
 
-        const res = await fetch("/api/question", { 
-            method: "POST", 
-            headers: {"Content-Type":"application/json"}, 
-            body: JSON.stringify({username: user, unit: selectedUnit}) 
-        });
+        try {
+            const res = await fetch("/api/question", { 
+                method: "POST", 
+                headers: {"Content-Type":"application/json"}, 
+                body: JSON.stringify({username: user, unit: selectedUnit}) 
+            });
 
-        // ここがポイント：1回だけjsonを受け取って表示
-        window.currentQ = await res.json();
-        document.getElementById("q-text").innerHTML = window.currentQ.question;
-        renderMath();
+            if (!res.ok) throw new Error('サーバーエラー');
+
+            const data = await res.json();
+            
+            // dataの中身が正常な時だけ代入する（(index):164のエラー対策）
+            if (data && data.question) {
+                window.currentQ = data;
+                qText.innerHTML = data.question;
+                renderMath();
+            } else {
+                throw new Error('AIの回答が空です');
+            }
+        } catch (e) {
+            console.error("読み込み失敗:", e);
+            qText.innerHTML = `<span style="color:red;">エラーが発生しました。もう一度「次の問題」を押してください。</span>`;
+            document.getElementById("next-btn").classList.remove("hidden");
+        }
     }
 
     async function checkAnswer() {
         const ans = document.getElementById("user-ans").value;
+        if (!window.currentQ) return;
+
         const isCorrect = (ans == window.currentQ.answer);
         if(isCorrect) solvedCount++;
 
