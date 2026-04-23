@@ -131,17 +131,23 @@ function generateTests() {
             document.getElementById("test-ans").value = "";
             showTest();
         } else {
-            const res = await fetch("/api/finish-test", { 
-                method: "POST", 
-                headers: {"Content-Type":"application/json"}, 
-                body: JSON.stringify({username: user, score}) 
-            });
-            const data = await res.json();
+            // ★ここから下をこの形に確実に書き換えてください
+            try {
+                const res = await fetch("/api/finish-test", { 
+                    method: "POST", 
+                    headers: {"Content-Type":"application/json"}, 
+                    body: JSON.stringify({username: user, score}) 
+                });
+                const data = await res.json();
+                document.getElementById("recommend-text").innerText = `判定完了！Lv.${data.level}がおすすめです。`;
+            } catch (e) {
+                console.error("保存失敗:", e);
+                document.getElementById("recommend-text").innerText = `判定完了！`;
+            }
             document.getElementById("test-area").classList.add("hidden");
             document.getElementById("menu-area").classList.remove("hidden");
-            document.getElementById("recommend-text").innerText = `判定完了！Lv.${data.level}がおすすめです。`;
         }
-    }
+    } // ←この閉じカッコが抜けていないか注意！
 
     async function loadQuestion() {
         if(solvedCount >= targetCount && targetCount !== 0) {
