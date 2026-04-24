@@ -188,9 +188,14 @@ function generateAIQuestion(lv) {
             ans = (4 * r14 * r14) + "π";
             break;
         case 15: // 平均・中央値
-            const n1 = r(10), n2 = r(10), n3 = r(10);
-            text = `${n1}, ${n2}, ${n3} の3つのデータの平均値は？(整数で回答)`;
-            ans = Math.round((n1 + n2 + n3) / 3).toString();
+            const n1 = r(10);
+            const n2 = r(10);
+            // 合計が3の倍数になるように3つ目を調整
+            const sum2 = n1 + n2;
+            const n3 = (3 - (sum2 % 3)) % 3 + (r(3) * 3); 
+            
+            text = `${n1}, ${n2}, ${n3} の3つのデータの平均値は？`;
+            ans = ((n1 + n2 + n3) / 3).toString();
             break;
         default:
             text = "問題データがありません";
