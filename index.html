@@ -1,35 +1,58 @@
-<section id="settings-section" class="card hidden">
-    <h2>学習設定</h2>
-    <p>診断または演習の問題数を選択してください</p>
-    <div class="select-group">
-        <button class="btn-outline" onclick="setCount(5)">5問</button>
-        <button class="btn-outline" onclick="setCount(10)">10問</button>
-        <button class="btn-outline" onclick="setCount(20)">20問</button>
-    </div>
-</section>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI数学マスター</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <section id="auth-choice" class="card">
+            <h1 class="title">AI数学マスター</h1>
+            <div class="btn-group">
+                <button class="btn-primary" onclick="showAuthForm('login')">ログイン</button>
+                <button class="btn-secondary" onclick="showAuthForm('signup')">新規登録</button>
+            </div>
+        </section>
 
-<section id="menu-section" class="card hidden">
-    <h2 class="title">学習ロードマップ</h2>
-    <div id="recommendation-banner" class="status-badge"></div>
-    <div class="unit-grid">
-        <div class="unit-card" onclick="startUnit('正負の数')">正負の数</div>
-        <div class="unit-card" onclick="startUnit('文字の式')">文字の式</div>
-        <div class="unit-card" onclick="startUnit('一次方程式')">一次方程式</div>
-        <div class="unit-card highlight" onclick="startUnit('連立方程式')">連立方程式</div>
-    </div>
-</section>
+        <section id="auth-form" class="card hidden">
+            <h2 id="form-title">ログイン</h2>
+            <input type="text" id="username" placeholder="ユーザー名">
+            <input type="password" id="password" placeholder="パスワード">
+            <button id="submit-btn" class="btn-primary" onclick="processAuth()">確定して開始</button>
+            <button class="btn-flat" onclick="backToChoice()">戻る</button>
+        </section>
 
-<div id="feedback-panel" class="panel">
-    <h3 id="feedback-result"></h3>
-    <div class="ai-box">
-        <p id="ai-comment"></p>
-        <div id="ai-generated-area" class="hidden">
-            <hr>
-            <p><strong>AIからの挑戦状（類題）：</strong></p>
-            <p id="ai-new-question"></p>
-            <input type="text" id="ai-answer-input" placeholder="類題の答え">
-            <button class="btn-small" onclick="checkAIAnswer()">類題を判定</button>
+        <section id="test-section" class="card hidden">
+            <div class="test-header">
+                <span id="q-unit" class="badge">ユニット</span>
+                <span class="progress">問 <span id="current-step">1</span>/4</span>
+            </div>
+            <h2 id="q-text">問題を読み込み中...</h2>
+            <div class="input-group">
+                <input type="text" id="answer-input" placeholder="答えを入力">
+                <button class="btn-action" onclick="handleAnswer()">回答する</button>
+            </div>
+        </section>
+
+        <section id="menu-section" class="card hidden">
+            <h2>学習ロードマップ</h2>
+            <div id="recommendation-banner"></div>
+            <div class="unit-grid">
+                <div class="unit-card" onclick="startUnit(1)">正負の数</div>
+                <div class="unit-card" onclick="startUnit(2)">文字の式</div>
+                <div class="unit-card" onclick="startUnit(3)">一次方程式</div>
+                <div class="unit-card highlight" onclick="startUnit(4)">連立方程式</div>
+            </div>
+        </section>
+
+        <div id="feedback-panel" class="panel">
+            <h3 id="feedback-result">結果</h3>
+            <p id="ai-comment"></p>
+            <button class="btn-next" onclick="nextQuestion()">次へ</button>
         </div>
     </div>
-    <button class="btn-next" onclick="nextQuestion()">次の本番問題へ</button>
-</div>
+    <script type="module" src="script.js"></script>
+</body>
+</html>
