@@ -51,7 +51,15 @@ window.processAuth = async () => {
         if (snap.exists()) {
             if (snap.val().password === pass) {
                 currentUser = user;
-                goToSettings(); // 設定画面へ
+                const userData = snap.val();
+
+                // ★ ここが追加：診断済みならメニュー、未なら設定へ
+                if (userData.hasTakenTest) {
+                    showMenu(); 
+                } else {
+                    currentMode = "diagnostic";
+                    goToSettings(); 
+                }
             } else {
                 alert("パスワードが違います");
             }
@@ -65,7 +73,35 @@ window.processAuth = async () => {
         goToSettings();
     }
 };
+// --- AI問題生成ロジック (新しく追加) ---
+function generateAIQuestion(lv) {
+    const config = levelMaster.find(l => l.lv === lv);
+    let text = "";
+    let ans = "";
 
+    // 例：Lv.8 方程式 Ax + B = C
+    if (lv === 8) {
+        const a = Math.floor(Math.random() * 8) + 2; 
+        const x = Math.floor(Math.random() * 10) + 1;
+        const b = Math.floor(Math.random() * 15) + 1;
+        const c = a * x + b;
+        text = `${a}x + ${b} = ${c} の x は？`;
+        ans = x.toString();
+    } 
+    // 例：Lv.1 正負の数
+    else if (lv === 1) {
+        const a = Math.floor(Math.random() * 20) - 10;
+        const b = Math.floor(Math.random() * 20) - 10;
+        text = `(${a}) + (${b}) は？`;
+        ans = (a + b).toString();
+    }
+    else {
+        text = `${config.title}の演習（準備中）`;
+        ans = "1";
+    }
+
+    return { unit: config.unit, text: text, ans: ans, level: lv };
+}
 function goToSettings() {
     document.getElementById('auth-form').classList.add('hidden');
     document.getElementById('settings-section').classList.remove('hidden');
@@ -145,9 +181,39 @@ function showMenu() {
     document.getElementById('recommendation-banner').innerHTML = `<h3>診断結果: Lv.${userScore}</h3>`;
 }
 
-window.startUnit = (unit) => {
-    alert(unit + "の個別学習を開始します");
+// --- startUnit を書き換え ---
+window.startUnit = (lv) => {
+    currentMode = "practice";
     currentStep = 0;
+    practiceQuestions = [];
+    
+    // 指定されたレベルの問題を、設定された問題数分生成
+    for (let i = 0; i < totalQuestions; i++) {
+        practiceQuestions.push(generateAIQuestion(lv));
+    }
+    
     document.getElementById('menu-section').classList.add('hidden');
-    document.getElementById('settings-section').classList.remove('hidden');
+    document.getElementById('test-section').classList.remove('hidden');
+    loadQuestion();
 };
+
+// --- showMenu を書き換え（診断済みフラグ保存を追加） ---
+function showMenu() {
+    // 診断テストから来た場合のみ、DBに完了フラグを立てる
+    if (currentMode === "diagnostic") {
+        set(ref(db, `users/${currentUser}/hasTakenTest`), true);
+        set(ref(db, `users/${currentUser}/level`), userScore);
+    }
+    
+    document.getElementById('test-section').classList.add('hidden');
+    document.getElementById('menu-section').classList.remove('hidden');
+    document.getElementById('recommendation-banner').innerHTML = `<h3>現在のレベル: Lv.${userScore}</h3>`;
+}
+
+// --- loadQuestion を書き換え（参照する配列をモードで分ける） ---
+function loadQuestion() {
+    const q = (currentMode === "diagnostic") ? questions[currentStep] : practiceQuestions[currentStep];
+    document.getElementById('q-unit').innerText = q.unit;
+    document.getElementById('q-text').innerText = q.text;
+    document.getElementById('current-step').innerText = currentStep + 1;
+}
