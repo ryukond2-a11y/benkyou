@@ -1,82 +1,82 @@
-const express = require("express");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const app = express();
-const port = process.env.PORT || 10000;
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.x/firebase-app.js";
+import { getDatabase, ref, set, push } from "https://www.gstatic.com/firebasejs/9.x/firebase-database.js";
 
-app.use(express.json());
-app.use(express.static("public"));
+// Firebase設定
+const firebaseConfig = {
+    apiKey: "AIzaSyAwdE7AqopqCSFu5fyTO9sj6iYlC_MtecI",
+    databaseURL: "https://benkyou-9a95b-default-rtdb.firebaseio.com/",
+    projectId: "benkyou-9a95b",
+};
 
-// 【所長の指定URL】末尾に /users.json をつけることで、ユーザーデータをここに集約します
-const DB_URL = "https://benkyou-9a95b-default-rtdb.firebaseio.com/users.json";
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-let users = {};
+// 診断テストの問題（文科省準拠：中1〜中2連立まで）
+const diagnosticQuestions = [
+    { id: "step1", unit: "正負の数", text: "(-8) + (+5) は？", ans: "-3", level: 1 },
+    { id: "step2", unit: "文字の式", text: "3x - 5x は？", ans: "-2x", level: 2 },
+    { id: "step3", unit: "一次方程式", text: "2x + 6 = 10 の x は？", ans: "2", level: 3 },
+    { id: "step4", unit: "連立方程式(基)", text: "x + y = 5, x - y = 1 のとき x は？", ans: "3", level: 4 }
+];
 
-// 1. 起動時にDBからデータを取得（以前のSNSと同じ方式）
-fetch(DB_URL)
-  .then(res => res.json())
-  .then(data => {
-    users = data || {};
-    console.log("Firebase(RTDB) 同期完了！");
-  })
-  .catch(err => console.error("DB読み込み失敗:", err));
+let currentStep = 0;
+let userScore = 0;
 
-// 2. データを保存する関数
-async function saveDB() {
-  try {
-    await fetch(DB_URL, {
-      method: "PUT",
-      body: JSON.stringify(users)
+// 回答ボタンが押された時の処理
+window.handleAnswer = async () => {
+    const input = document.getElementById('answer-input');
+    const userAns = input.value.trim();
+    const q = diagnosticQuestions[currentStep];
+    const isCorrect = (userAns === q.ans);
+
+    if (isCorrect) userScore = q.level;
+
+    // AI解説（仮：本来はここでAI APIを叩く）
+    const aiComment = isCorrect ? 
+        `正解！${q.unit}の基本がしっかりできています。` : 
+        `${q.unit}でミス。${q.id === "step3" ? "移項の時の符号" : "計算"}を見直しましょう。`;
+
+    // そのままDBに保存
+    const username = "Ryushun"; // 固定または入力から取得
+    await set(ref(db, `logs/${username}/${q.id}`), {
+        answer: userAns,
+        isCorrect: isCorrect,
+        timestamp: new Date().toISOString()
     });
-  } catch (e) {
-    console.error("DB保存エラー:", e);
-  }
+
+    // フィードバックパネル表示
+    showFeedback(isCorrect, aiComment);
+};
+
+function showFeedback(isCorrect, comment) {
+    const panel = document.getElementById('feedback-panel');
+    document.getElementById('feedback-result').innerText = isCorrect ? "○ 正解" : "× 不正解";
+    document.getElementById('ai-comment').innerText = comment;
+    panel.classList.add('show');
 }
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+window.nextQuestion = () => {
+    currentStep++;
+    document.getElementById('feedback-panel').classList.remove('show');
+    document.getElementById('answer-input').value = "";
 
-/* ===== API エンドポイント ===== */
+    if (currentStep < diagnosticQuestions.length) {
+        document.getElementById('q-text').innerText = diagnosticQuestions[currentStep].text;
+        document.getElementById('q-title').innerText = diagnosticQuestions[currentStep].unit;
+    } else {
+        finishDiagnostic();
+    }
+};
 
-// サインアップ（ユーザーがいなければ新規作成）
-app.post("/api/signup", async (req, res) => {
-  const { username } = req.body;
-  if (!users[username]) {
-    users[username] = { level: 1, totalAttempts: 0, correctAnswers: 0 };
-    await saveDB();
-  }
-  res.json({ message: "OK" });
-});
-
-// 診断結果の保存
-app.post("/api/finish-test", async (req, res) => {
-  const { username, score } = req.body;
-  // スコアに応じておすすめレベルを判定
-  let level = score >= 5 ? 5 : score >= 3 ? 3 : 1;
-  
-  if (users[username]) {
-    users[username].level = level;
-    await saveDB();
-  }
-  res.json({ level });
-});
-
-// AI問題生成
-app.post("/api/question", async (req, res) => {
-  try {
-    const { unit } = req.body;
-    const prompt = `数学教師として、中学数学の「${unit}」の問題を1問作成してください。
-    【重要】1. 数式は $ で囲む LaTeX。 2. バックスラッシュは2重（\\\\）にする。
-    3. 返答は以下のJSON形式のみ： {"question": "問題", "answer": "数値", "explanation": "解説"}`;
+function finishDiagnostic() {
+    document.getElementById('test-section').classList.add('hidden');
+    const practice = document.getElementById('practice-section');
+    practice.classList.remove('hidden');
     
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text().replace(/```json|```/g, "").trim();
-    res.json(JSON.parse(responseText));
-  } catch (e) {
-    console.error("AI Error:", e);
-    res.status(500).json({ error: "AI生成失敗" });
-  }
-});
-
-app.listen(port, "0.0.0.0", () => {
-  console.log(`Server running on port ${port}`);
-});
+    // おすすめレベルの表示
+    const banner = document.getElementById('recommendation-banner');
+    banner.innerHTML = `<h3>診断結果：Lv.${userScore} がおすすめ！</h3>`;
+    
+    // DBに最終レベルを保存
+    set(ref(db, `users/Ryushun/level`), userScore);
+}
