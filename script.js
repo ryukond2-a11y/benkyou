@@ -61,7 +61,8 @@ const diagnosticQuestions = [
 
 // --- セクション切り替えヘルパー ---
 function showSection(sectionId) {
-    const sections = ['auth-choice', 'auth-form', 'settings-section', 'test-section', 'menu-section'];
+    // ranking-section を追加
+    const sections = ['auth-choice', 'auth-form', 'settings-section', 'test-section', 'menu-section', 'ranking-section'];
     sections.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -302,7 +303,48 @@ function showMenu() {
     showSection('menu-section');
     document.getElementById('recommendation-banner').innerHTML = `<h3>現在の到達レベル: Lv.${userScore}</h3>`;
 }
+window.showRanking = async () => {
+    showSection('ranking-section');
+    const rankingBody = document.getElementById('ranking-body');
+    rankingBody.innerHTML = "<tr><td colspan='3'>読み込み中...</td></tr>";
 
+    try {
+        // 全ユーザーのログを取得
+        const logsSnap = await get(ref(db, 'logs'));
+        if (!logsSnap.exists()) {
+            rankingBody.innerHTML = "<tr><td colspan='3'>データがありません</td></tr>";
+            return;
+        }
+
+        const allLogs = logsSnap.val();
+        const rankingData = [];
+
+        // ユーザーごとにログの数を数える
+        for (const username in allLogs) {
+            const solveCount = Object.keys(allLogs[username]).length;
+            rankingData.push({ name: username, count: solveCount });
+        }
+
+        // 挑戦数が多い順に並び替え
+        rankingData.sort((a, b) => b.count - a.count);
+
+        // テーブルに表示
+        rankingBody.innerHTML = "";
+        rankingData.forEach((data, index) => {
+            const row = `
+                <tr style="border-bottom: 1px solid #eee; height: 40px;">
+                    <td>${index + 1}位</td>
+                    <td>${data.name}</td>
+                    <td><b>${data.count}</b> 問</td>
+                </tr>
+            `;
+            rankingBody.innerHTML += row;
+        });
+    } catch (e) {
+        console.error(e);
+        rankingBody.innerHTML = "<tr><td colspan='3'>エラーが発生しました</td></tr>";
+    }
+};
 // --- 修正：演習開始ボタン ---
 window.startUnit = (lv) => {
     selectedLv = lv; // レベルを覚えさせる
