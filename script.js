@@ -14,7 +14,85 @@ let authMode = 'login'; // 'login' or 'signup'
 let currentUser = "";
 let currentStep = 0;
 let userScore = 0;
+let totalQuestions = 4; // 選ばれた問題数
+let aiAnswer = "";      // AI類題の正解
 
+// --- 設定処理 ---
+window.setCount = (num) => {
+    totalQuestions = Math.min(num, questions.length); // 問題集より多くならないように
+    document.getElementById('settings-section').classList.add('hidden');
+    document.getElementById('test-section').classList.remove('hidden');
+    loadQuestion();
+};
+
+// 認証成功時の行き先を変更
+function startDiagnostic() {
+    document.getElementById('auth-form').classList.add('hidden');
+    document.getElementById('settings-section').classList.remove('hidden'); // 設定へ
+}
+
+// --- ジャンル別開始 (ReferenceError対策) ---
+window.startUnit = (unitName) => {
+    alert(unitName + "の特訓を開始します！");
+    currentStep = 0;
+    // 本来はここでその単元の問題だけをフィルターする
+    document.getElementById('menu-section').classList.add('hidden');
+    document.getElementById('settings-section').classList.remove('hidden');
+};
+
+// --- AI解説 & 類題生成 ---
+window.handleAnswer = async () => {
+    const ans = document.getElementById('answer-input').value.trim();
+    const q = questions[currentStep];
+    const isCorrect = (ans === q.ans);
+    if(isCorrect) userScore = q.level;
+
+    // AI解説を表示
+    document.getElementById('feedback-result').innerText = isCorrect ? "○ 正解" : "× 不正解";
+    document.getElementById('ai-comment').innerText = isCorrect ? 
+        "素晴らしい！基本が完璧です。" : 
+        `惜しい！${q.unit}のルールを確認しましょう。正解は ${q.ans} です。`;
+
+    // 不正解ならAI類題を出す
+    const retryArea = document.getElementById('ai-retry-area');
+    if (!isCorrect) {
+        retryArea.classList.remove('hidden');
+        // 簡易AI生成ロジック（数値をランダムに変える）
+        const val1 = Math.floor(Math.random() * 10) + 1;
+        const val2 = Math.floor(Math.random() * 10) + 1;
+        document.getElementById('ai-q-text').innerText = `類題: ${val1} + ${val2} は？`;
+        aiAnswer = (val1 + val2).toString();
+    } else {
+        retryArea.classList.add('hidden');
+    }
+
+    document.getElementById('feedback-panel').classList.add('show');
+};
+
+// 類題の判定
+window.checkAIAnswer = () => {
+    const userAiAns = document.getElementById('ai-ans-input').value.trim();
+    if (userAiAns === aiAnswer) {
+        alert("正解！類題クリアです。");
+        document.getElementById('ai-retry-area').classList.add('hidden');
+    } else {
+        alert("違います。もう一度考えてみよう。");
+    }
+};
+
+// nextQuestion の修正（totalQuestionsで判定）
+window.nextQuestion = () => {
+    document.getElementById('feedback-panel').classList.remove('show');
+    document.getElementById('answer-input').value = "";
+    document.getElementById('ai-ans-input').value = "";
+    currentStep++;
+    
+    if (currentStep < totalQuestions) {
+        loadQuestion();
+    } else {
+        showMenu();
+    }
+};
 const questions = [
     { unit: "正負の数", text: "(-8) + (+5) は？", ans: "-3", level: 1 },
     { unit: "文字の式", text: "3x - 5x は？", ans: "-2x", level: 2 },
