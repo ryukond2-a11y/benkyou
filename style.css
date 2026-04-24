@@ -31,3 +31,54 @@ input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; bord
     transform: translateY(100%); transition: 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 .panel.show { transform: translateY(0); }
+/* 追加分のスタイル */
+.btn-outline {
+    background: transparent;
+    border: 2px solid #4a90e2;
+    color: #4a90e2;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.btn-outline:hover { background: #e3f2fd; }
+
+.ai-box {
+    background: #f8f9fa;
+    border-left: 5px solid #4a90e2;
+    padding: 15px;
+    text-align: left;
+    margin: 10px 0;
+}
+
+.btn-small {
+    background: #34495e;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    margin-top: 5px;
+}
+
+.unit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.unit-card {
+    background: white;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.unit-card.highlight {
+    border: 2px solid #4a90e2;
+    color: #4a90e2;
+    background: #f0f7ff;
+}
