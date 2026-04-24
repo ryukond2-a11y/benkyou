@@ -226,12 +226,25 @@ function loadQuestion() {
     document.getElementById('feedback-panel').classList.remove('show'); // パネル隠す
 }
 
-// --- 修正：AI解説と診断時フロー ---
 window.handleAnswer = async () => {
     const inputField = document.getElementById('answer-input');
-    const ans = inputField.value.trim();
+    
+    // --- ここから修正：入力値のクレンジング ---
+    let ans = inputField.value.trim(); // 前後の空白を消す
+    
+    // 全角英数字を半角に、全角マイナスを半角に変換する関数
+    const normalize = (str) => {
+        return str.replace(/[！-～]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xfee0)) // 英数字を半角へ
+                  .replace(/ー|−|－/g, '-') // 各種伸ばし棒・全角マイナスを半角ハイフンへ
+                  .replace(/\s+/g, '');    // 中間のスペースも削除
+    };
+
+    const cleanAns = normalize(ans);
+    const cleanCorrectAns = normalize(q.ans);
+    
     const q = (currentMode === "diagnostic") ? diagnosticQuestions[currentStep] : practiceQuestions[currentStep];
-    const isCorrect = (ans === q.ans);
+    const isCorrect = (cleanAns === cleanCorrectAns); // 整えた後の値で比較
+    // --- 修正ここまで ---
     const currentLv = q.lv || 0;
 
     await set(ref(db, `logs/${currentUser}/${Date.now()}`), { ans, isCorrect, lv: currentLv });
