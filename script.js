@@ -324,18 +324,23 @@ window.nextQuestion = () => {
     }
 };
 
-function showMenu() {
+// 【修正前】 function showMenu() { ... }
+// 【修正後】 以下の形に書き換え
+
+window.showMenu = () => {
     showSection('menu-section');
     
-    // 到達レベルの表示
+    // 到達レベルの表示更新
     const banner = document.getElementById('recommendation-banner');
     if (banner) {
         banner.innerHTML = `<h3>現在の到達レベル: Lv.${userScore}</h3>`;
     }
 
-    // PDFボタン付きのレベル一覧を生成
-    renderLevelMenu();
-}
+    // PDFボタン付きのレベル一覧を再生成（最新の状態を反映）
+    if (typeof renderLevelMenu === 'function') {
+        renderLevelMenu();
+    }
+};
 window.showRanking = async () => {
     showSection('ranking-section');
     const rankingBody = document.getElementById('ranking-body');
