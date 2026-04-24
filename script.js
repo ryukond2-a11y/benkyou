@@ -23,23 +23,22 @@ let selectedLv = 1; // 追加：演習レベル保持用
 
 // --- 中1数学 15レベル定義（hintを追加） ---
 const levelMaster = [
-    { lv: 1, unit: "正負の数", title: "正負の数（加減）", hint: "同じ符号なら足してその符号、違うなら引いて絶対値が大きい方の符号！" },
-    { lv: 2, unit: "正負の数", title: "正負の数（乗除）", hint: "マイナスが奇数個なら「−」、偶数個なら「＋」になるよ。" },
-    { lv: 3, unit: "正負の数", title: "累乗・四則混合", hint: "累乗 → カッコ内 → 乗除 → 加減の順で計算！" },
-    { lv: 4, unit: "文字の式", title: "文字式の表し方", hint: "×や÷を省く、数は前、アルファベット順などのルールを確認！" },
-    { lv: 5, unit: "文字の式", title: "式の計算（加減）", hint: "同じ文字がついた項（同類項）どうしをまとめよう！" },
-    { lv: 6, unit: "一次方程式", title: "等式の性質", hint: "両辺に同じ数を足したり引いたりしてもバランスは崩れないよ！" },
-    { lv: 7, unit: "一次方程式", title: "一次方程式の解法", hint: "xがついた項を左辺に、数字を右辺に集めよう！" },
-    { lv: 8, unit: "一次方程式", title: "方程式（移行）", hint: "＝を飛び越えるときは、符号をプラスからマイナス（逆）に変えよう！" },
-    { lv: 9, unit: "一次方程式", title: "方程式（複雑）", hint: "カッコや小数は、まず展開や10倍・100倍をして整数に直そう！" },
-    { lv: 10, unit: "比例・反比例", title: "比例の式", hint: "y = ax。aを求めるには y ÷ x を計算しよう！" },
-    { lv: 11, unit: "比例・反比例", title: "反比例の式", hint: "y = a/x。aを求めるには x × y を計算しよう！" },
-    { lv: 12, unit: "平面図形", title: "おうぎ形の計算", hint: "（弧の長さ）＝（円周 2πr）×（中心角/360）だよ！" },
-    { lv: 13, unit: "空間図形", title: "柱体の体積", hint: "（体積）＝（底面積）×（高さ）で計算しよう！" },
-    { lv: 14, unit: "空間図形", title: "球の計算", hint: "表面積 S = 4πr^2。心配(4π)ある(r^2)と覚えよう！" },
-    { lv: 15, unit: "データの活用", title: "平均・中央値", hint: "合計÷個数が平均、小さい順に並べた真ん中の値が中央値！" }
+    { lv: 1, unit: "正負の数", title: "正負の数（加減）", hint: "同じ符号なら足してその符号、違うなら引いて絶対値が大きい方の符号！", pdf: "pdfs/lv1.pdf" },
+    { lv: 2, unit: "正負の数", title: "正負の数（乗除）", hint: "マイナスが奇数個なら「−」、偶数個なら「＋」になるよ。", pdf: "pdfs/lv2.pdf" },
+    { lv: 3, unit: "正負の数", title: "累乗・四則混合", hint: "累乗 → カッコ内 → 乗除 → 加減の順で計算！", pdf: "pdfs/lv3.pdf" },
+    { lv: 4, unit: "文字の式", title: "文字式の表し方", hint: "×や÷を省く、数は前、アルファベット順などのルールを確認！", pdf: "pdfs/lv4.pdf" },
+    { lv: 5, unit: "文字の式", title: "式の計算（加減）", hint: "同じ文字がついた項（同類項）どうしをまとめよう！", pdf: "pdfs/lv5.pdf" },
+    { lv: 6, unit: "一次方程式", title: "等式の性質", hint: "両辺に同じ数を足したり引いたりしてもバランスは崩れないよ！", pdf: "pdfs/lv6.pdf" },
+    { lv: 7, unit: "一次方程式", title: "一次方程式の解法", hint: "xがついた項を左辺に、数字を右辺に集めよう！", pdf: "pdfs/lv7.pdf" },
+    { lv: 8, unit: "一次方程式", title: "方程式（移行）", hint: "＝を飛び越えるときは、符号をプラスからマイナス（逆）に変えよう！", pdf: "pdfs/lv8.pdf" },
+    { lv: 9, unit: "一次方程式", title: "方程式（複雑）", hint: "カッコや小数は、まず展開や10倍・100倍をして整数に直そう！", pdf: "pdfs/lv9.pdf" },
+    { lv: 10, unit: "比例・反比例", title: "比例の式", hint: "y = ax。aを求めるには y ÷ x を計算しよう！", pdf: "pdfs/lv10.pdf" },
+    { lv: 11, unit: "比例・反比例", title: "反比例の式", hint: "y = a/x。aを求めるには x × y を計算しよう！", pdf: "pdfs/lv11.pdf" },
+    { lv: 12, unit: "平面図形", title: "おうぎ形の計算", hint: "（弧の長さ）＝（円周 2πr）×（中心角/360）だよ！", pdf: "pdfs/lv12.pdf" },
+    { lv: 13, unit: "空間図形", title: "柱体の体積", hint: "（体積）＝（底面積）×（高さ）で計算しよう！", pdf: "pdfs/lv13.pdf" },
+    { lv: 14, unit: "空間図形", title: "球の計算", hint: "表面積 S = 4πr^2。心配(4π)ある(r^2)と覚えよう！", pdf: "pdfs/lv14.pdf" },
+    { lv: 15, unit: "データの活用", title: "平均・中央値", hint: "合計÷個数が平均、小さい順に並べた真ん中の値が中央値！", pdf: "pdfs/lv15.pdf" }
 ];
-
 // --- 診断テスト用 15問 ---
 const diagnosticQuestions = [
     { lv: 1, unit: "正負の数", text: "(-8) + (+5) は？", ans: "-3" },
@@ -58,7 +57,28 @@ const diagnosticQuestions = [
     { lv: 14, unit: "空間図形", text: "半径3cmの球の表面積は？(πを用いて回答)", ans: "36π" },
     { lv: 15, unit: "データの活用", text: "3, 7, 11, 19の4つのデータの平均値は？", ans: "10" }
 ];
+// レベルメニューを動的に生成する関数
+function renderLevelMenu() {
+    const container = document.querySelector('.unit-list-container');
+    if (!container) return;
+    container.innerHTML = "";
 
+    levelMaster.forEach(item => {
+        const row = document.createElement('div');
+        row.style = "display: flex; gap: 8px; margin-bottom: 12px; align-items: stretch;";
+        
+        row.innerHTML = `
+            <div class="unit-card" onclick="startUnit(${item.lv})" style="flex: 1; margin-bottom: 0; display: flex; align-items: center; padding: 10px; cursor: pointer;">
+                Lv.${item.lv} ${item.title}
+            </div>
+            <button onclick="window.open('${item.pdf}', '_blank')" 
+                style="width: 70px; background: #607d8b; color: white; border: none; border-radius: 12px; font-size: 12px; cursor: pointer; font-weight: bold; line-height: 1.2; padding: 5px;">
+                解き方<br>PDF
+            </button>
+        `;
+        container.appendChild(row);
+    });
+}
 // --- セクション切り替えヘルパー ---
 function showSection(sectionId) {
     // ranking-section を追加
@@ -306,7 +326,15 @@ window.nextQuestion = () => {
 
 function showMenu() {
     showSection('menu-section');
-    document.getElementById('recommendation-banner').innerHTML = `<h3>現在の到達レベル: Lv.${userScore}</h3>`;
+    
+    // 到達レベルの表示
+    const banner = document.getElementById('recommendation-banner');
+    if (banner) {
+        banner.innerHTML = `<h3>現在の到達レベル: Lv.${userScore}</h3>`;
+    }
+
+    // PDFボタン付きのレベル一覧を生成
+    renderLevelMenu();
 }
 window.showRanking = async () => {
     showSection('ranking-section');
