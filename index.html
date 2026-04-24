@@ -7,27 +7,6 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="menu-section" class="hidden">
-    <div id="recommendation-banner"></div>
-    <button onclick="showRanking()" style="background-color: #ff9800; color: white; margin-bottom: 10px;">ランキングを見る</button>
-    </div>
-
-<div id="ranking-section" class="hidden">
-    <h2>🔥 挑戦問題数ランキング</h2>
-    <div style="max-height: 400px; overflow-y: auto;">
-        <table id="ranking-table" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-            <thead>
-                <tr style="border-bottom: 2px solid #ddd;">
-                    <th>順位</th>
-                    <th>ユーザー</th>
-                    <th>挑戦数</th>
-                </tr>
-            </thead>
-            <tbody id="ranking-body"></tbody>
-        </table>
-    </div>
-    <button onclick="showMenu()" style="margin-top: 20px;">メニューに戻る</button>
-</div>
     <div id="app">
         <section id="auth-choice" class="card">
             <h1 class="title">AI数学マスター</h1>
@@ -67,39 +46,54 @@
             </div>
         </section>
 
-       <section id="menu-section" class="card hidden">
-    <h2>中1数学ロードマップ (Lv.1〜15)</h2>
-<div id="recommendation-banner"></div>
-<div class="unit-list-container">
-    <div class="unit-card" onclick="startUnit(1)">Lv.1 正負の数（加減）</div>
-    <div class="unit-card" onclick="startUnit(2)">Lv.2 正負 of 数（乗除）</div>
-    <div class="unit-card" onclick="startUnit(3)">Lv.3 累乗・四則混合</div>
-    <div class="unit-card" onclick="startUnit(4)">Lv.4 文字式の表し方</div>
-    <div class="unit-card" onclick="startUnit(5)">Lv.5 文字式の計算</div>
-    <div class="unit-card" onclick="startUnit(6)">Lv.6 等式の性質</div>
-    <div class="unit-card" onclick="startUnit(7)">Lv.7 一次方程式の解法</div>
-    <div class="unit-card" onclick="startUnit(8)">Lv.8 方程式の移行</div>
-    <div class="unit-card" onclick="startUnit(9)">Lv.9 方程式の応用</div>
-    <div class="unit-card" onclick="startUnit(10)">Lv.10 比例の式</div>
-    <div class="unit-card" onclick="startUnit(11)">Lv.11 反比例の式</div>
-    <div class="unit-card" onclick="startUnit(12)">Lv.12 平面図形・おうぎ形</div>
-    <div class="unit-card" onclick="startUnit(13)">Lv.13 空間図形・体積</div>
-    <div class="unit-card" onclick="startUnit(14)">Lv.14 球の表面積・体積</div>
-    <div class="unit-card" onclick="startUnit(15)">Lv.15 データの活用・平均</div>
-</div>
-</section>
+        <section id="menu-section" class="card hidden">
+            <h2>中1数学ロードマップ (Lv.1〜15)</h2>
+            <div id="recommendation-banner" style="margin-bottom: 10px;"></div>
+            
+            <button onclick="showRanking()" style="background-color: #ff9800; color: white; width: 100%; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 20px;">
+                🔥 ランキングを見る
+            </button>
+
+            <div class="unit-list-container" style="max-height: 400px; overflow-y: auto;">
+                <div class="unit-card" onclick="startUnit(1)">Lv.1 正負の数（加減）</div>
+                <div class="unit-card" onclick="startUnit(2)">Lv.2 正負の数（乗除）</div>
+                <div class="unit-card" onclick="startUnit(3)">Lv.3 累乗・四則混合</div>
+                <div class="unit-card" onclick="startUnit(4)">Lv.4 文字式の表し方</div>
+                <div class="unit-card" onclick="startUnit(5)">Lv.5 文字式の計算</div>
+                <div class="unit-card" onclick="startUnit(6)">Lv.6 等式の性質</div>
+                <div class="unit-card" onclick="startUnit(7)">Lv.7 一次方程式の解法</div>
+                <div class="unit-card" onclick="startUnit(8)">Lv.8 方程式の移行</div>
+                <div class="unit-card" onclick="startUnit(9)">Lv.9 方程式の応用</div>
+                <div class="unit-card" onclick="startUnit(10)">Lv.10 比例の式</div>
+                <div class="unit-card" onclick="startUnit(11)">Lv.11 反比例の式</div>
+                <div class="unit-card" onclick="startUnit(12)">Lv.12 平面図形・おうぎ形</div>
+                <div class="unit-card" onclick="startUnit(13)">Lv.13 空間図形・体積</div>
+                <div class="unit-card" onclick="startUnit(14)">Lv.14 球の表面積・体積</div>
+                <div class="unit-card" onclick="startUnit(15)">Lv.15 データの活用・平均</div>
+            </div>
+        </section>
+
+        <section id="ranking-section" class="card hidden">
+            <h2>🔥 挑戦問題数ランキング</h2>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table id="ranking-table" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #ddd;">
+                            <th>順位</th>
+                            <th>ユーザー</th>
+                            <th>挑戦数</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ranking-body"></tbody>
+                </table>
+            </div>
+            <button class="btn-flat" onclick="showMenu()" style="margin-top: 20px;">メニューに戻る</button>
+        </section>
 
         <div id="feedback-panel" class="panel">
             <h3 id="feedback-result">結果</h3>
             <div class="ai-box">
                 <p id="ai-comment"></p>
-                <div id="ai-retry-area" class="hidden">
-                    <hr>
-                    <p style="color:#4a90e2; font-weight:bold;">AIからの挑戦状（類題）</p>
-                    <p id="ai-q-text"></p>
-                    <input type="text" id="ai-ans-input" placeholder="類題の答え">
-                    <button class="btn-small" onclick="checkAIAnswer()">類題を判定</button>
-                </div>
             </div>
             <button class="btn-next" onclick="nextQuestion()">次へ</button>
         </div>
