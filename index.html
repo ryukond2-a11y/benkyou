@@ -7,6 +7,27 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="menu-section" class="hidden">
+    <div id="recommendation-banner"></div>
+    <button onclick="showRanking()" style="background-color: #ff9800; color: white; margin-bottom: 10px;">ランキングを見る</button>
+    </div>
+
+<div id="ranking-section" class="hidden">
+    <h2>🔥 挑戦問題数ランキング</h2>
+    <div style="max-height: 400px; overflow-y: auto;">
+        <table id="ranking-table" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+            <thead>
+                <tr style="border-bottom: 2px solid #ddd;">
+                    <th>順位</th>
+                    <th>ユーザー</th>
+                    <th>挑戦数</th>
+                </tr>
+            </thead>
+            <tbody id="ranking-body"></tbody>
+        </table>
+    </div>
+    <button onclick="showMenu()" style="margin-top: 20px;">メニューに戻る</button>
+</div>
     <div id="app">
         <section id="auth-choice" class="card">
             <h1 class="title">AI数学マスター</h1>
