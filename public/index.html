@@ -2,180 +2,45 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>AI数学マスター | Neda Lab</title>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <style>
-        body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
-        .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
-        .hidden { display: none; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #0061da; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .sub-btn { background: #6c757d; font-size: 0.8rem; margin-top: 5px; }
-        .genre-btn { background: #5c6bc0; margin-bottom: 5px; }
-    </style>
+    <title>中学数学マスター</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="card">
-        <h2 style="color:#0061da; text-align:center;">AI数学マスター</h2>
-        
-        <div id="auth-area">
-            <h3 id="auth-title">ログイン</h3>
-            <input id="uname" placeholder="ユーザー名">
-            <input id="pass" type="password" placeholder="パスワード">
-            <button id="main-auth-btn" onclick="handleAuth()">ログイン</button>
-            <button class="sub-btn" id="toggle-auth-btn" onclick="toggleAuthMode()">アカウントをお持ちでない方（新規登録）</button>
-        </div>
+    <div id="app">
+        <header>
+            <h1>中学数学診断</h1>
+            <div id="user-info"></div>
+        </header>
 
-        <div id="test-area" class="hidden">
-            <p id="test-progress"></p>
-            <div id="test-q-text" style="font-size:1.3rem; margin:20px 0; text-align:center;"></div>
-            <input id="test-ans" placeholder="答えを入力">
-            <button onclick="nextTestQ()">回答して次へ</button>
-        </div>
-
-        <div id="menu-area" class="hidden">
-            <p id="recommend-text" style="background:#e3f2fd; padding:10px; border-radius:5px;"></p>
-            <p>学習する単元を選んでください：</p>
-            <button class="genre-btn" onclick="setUnit('正負の数')">正負の数</button>
-            <button class="genre-btn" onclick="setUnit('一次方程式')">一次方程式</button>
-            <button class="genre-btn" onclick="setUnit('連立方程式')">連立方程式</button>
-            
-            <div id="count-select" class="hidden">
-                <p>何問解きますか？</p>
-                <button onclick="startStudy(3)">3問</button>
-                <button onclick="startStudy(5)">5問</button>
+        <section id="test-section" class="card">
+            <div class="progress-bar"><div id="progress"></div></div>
+            <div id="question-container">
+                <h2 id="q-title">問題</h2>
+                <p id="q-text">読み込み中...</p>
+                <input type="text" id="answer-input" placeholder="答えを入力">
+                <button onclick="submitAnswer()">回答する</button>
             </div>
-        </div>
+        </section>
 
-        <div id="study-area" class="hidden">
-            <p id="study-progress"></p>
-            <div id="q-text" style="font-size:1.3rem; margin:20px 0; text-align:center;"></div>
-            <input id="user-ans" placeholder="答えを入力">
-            <button id="ans-btn" onclick="checkAnswer()">回答する</button>
-            <div id="exp-area" class="hidden" style="background:#f8f9fa; padding:15px; margin:10px 0; border-radius:8px;"></div>
-            <button id="next-btn" class="hidden" onclick="loadAIQuestion()" style="background:#28a745;">次の問題へ</button>
+        <section id="practice-section" class="card hidden">
+            <div id="recommendation-banner"></div>
+            <h3>単元別演習</h3>
+            <ul id="unit-list">
+                <li data-level="1">Lv.1 正負の数</li>
+                <li data-level="2">Lv.2 文字の式</li>
+                <li data-level="3">Lv.3 一次方程式</li>
+                <li data-level="4">Lv.4 連立方程式(基本)</li>
+                <li data-level="5">Lv.5 連立方程式(応用)</li>
+            </ul>
+        </section>
+
+        <div id="feedback-panel" class="panel hidden">
+            <div id="feedback-result"></div>
+            <div id="ai-comment"></div>
+            <button onclick="nextQuestion()">次へ</button>
         </div>
     </div>
 
-    <script>
-        let currentUser = "";
-        let isSignupMode = false;
-        let testQuestions = [
-            { q: "$(-2) + (-5)$", a: -7 },
-            { q: "$3x = 12$", a: 4 },
-            { q: "$2x + 5 = 11$", a: 3 },
-            { q: "$x + y = 5, x - y = 1$ の $x$", a: 3 },
-            { q: "$(-8) \\div (-2)$", a: 4 }
-        ];
-        let currentIdx = 0;
-        let score = 0;
-        let selectedUnit = "";
-        let targetCount = 0;
-        let solvedCount = 0;
-        let currentAIQuestion = null;
-
-        function toggleAuthMode() {
-            isSignupMode = !isSignupMode;
-            document.getElementById("auth-title").innerText = isSignupMode ? "新規登録" : "ログイン";
-            document.getElementById("main-auth-btn").innerText = isSignupMode ? "登録して開始" : "ログイン";
-            document.getElementById("toggle-auth-btn").innerText = isSignupMode ? "既にアカウントをお持ちの方" : "アカウントをお持ちでない方（新規登録）";
-        }
-
-        async function handleAuth() {
-            const username = document.getElementById("uname").value;
-            const password = document.getElementById("pass").value;
-            const endpoint = isSignupMode ? "/api/signup" : "/api/login";
-
-            const res = await fetch(endpoint, {
-                method: "POST",
-                headers: {"Content-Type":"application/json"},
-                body: JSON.stringify({ username, password })
-            });
-
-            if (res.ok) {
-                currentUser = username;
-                document.getElementById("auth-area").classList.add("hidden");
-                // 登録直後は診断テストへ、ログインならメニューへ（今回は簡易的に全員診断から）
-                document.getElementById("test-area").classList.remove("hidden");
-                showTest();
-            } else {
-                const data = await res.json();
-                alert(data.error);
-            }
-        }
-
-        function showTest() {
-            document.getElementById("test-progress").innerText = `診断中: ${currentIdx+1}/5`;
-            document.getElementById("test-q-text").innerHTML = testQuestions[currentIdx].q;
-            MathJax.typesetPromise();
-        }
-
-        async function nextTestQ() {
-            if (document.getElementById("test-ans").value == testQuestions[currentIdx].a) score++;
-            currentIdx++;
-            if (currentIdx < 5) {
-                document.getElementById("test-ans").value = "";
-                showTest();
-            } else {
-                const res = await fetch("/api/finish-test", {
-                    method: "POST",
-                    headers: {"Content-Type":"application/json"},
-                    body: JSON.stringify({ username: currentUser, score })
-                });
-                const data = await res.json();
-                document.getElementById("test-area").classList.add("hidden");
-                document.getElementById("menu-area").classList.remove("hidden");
-                document.getElementById("recommend-text").innerText = `あなたの推奨レベル: Lv.${data.level}`;
-            }
-        }
-
-        function setUnit(unit) {
-            selectedUnit = unit;
-            document.getElementById("count-select").classList.remove("hidden");
-        }
-
-        function startStudy(count) {
-            targetCount = count;
-            solvedCount = 0;
-            document.getElementById("menu-area").classList.add("hidden");
-            document.getElementById("study-area").classList.remove("hidden");
-            loadAIQuestion();
-        }
-
-        async function loadAIQuestion() {
-            if (solvedCount >= targetCount) {
-                alert("特訓完了！メニューに戻ります。");
-                location.reload();
-                return;
-            }
-            document.getElementById("q-text").innerText = "AIが問題を作成中...";
-            document.getElementById("next-btn").classList.add("hidden");
-            document.getElementById("exp-area").classList.add("hidden");
-            document.getElementById("user-ans").value = "";
-
-            const res = await fetch("/api/question", {
-                method: "POST",
-                headers: {"Content-Type":"application/json"},
-                body: JSON.stringify({ unit: selectedUnit })
-            });
-            currentAIQuestion = await res.json();
-            
-            document.getElementById("study-progress").innerText = `${selectedUnit} (${solvedCount+1}/${targetCount})`;
-            document.getElementById("q-text").innerHTML = currentAIQuestion.question;
-            MathJax.typesetPromise();
-        }
-
-        function checkAnswer() {
-            const userAns = document.getElementById("user-ans").value;
-            const isCorrect = (userAns == currentAIQuestion.answer);
-            if (isCorrect) solvedCount++;
-
-            const exp = document.getElementById("exp-area");
-            exp.innerHTML = `<strong>${isCorrect ? '✅正解！' : '❌不正解'}</strong><br>${currentAIQuestion.explanation}`;
-            exp.classList.remove("hidden");
-            document.getElementById("next-btn").classList.remove("hidden");
-            MathJax.typesetPromise();
-        }
-    </script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
