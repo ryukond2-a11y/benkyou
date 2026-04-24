@@ -1,11 +1,11 @@
 {
   "name": "benkyou-app",
-  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
+    "express": "^4.18.2",
     "firebase": "^10.11.0"
   }
 }
