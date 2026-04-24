@@ -229,37 +229,39 @@ function loadQuestion() {
 window.handleAnswer = async () => {
     const inputField = document.getElementById('answer-input');
     
-    // --- ここから修正：入力値のクレンジング ---
-    let ans = inputField.value.trim(); // 前後の空白を消す
+    // 1. まず現在の問題「q」を特定する（順番を上に持ってきた）
+    const q = (currentMode === "diagnostic") ? diagnosticQuestions[currentStep] : practiceQuestions[currentStep];
+
+    // 2. 入力値のクレンジング
+    let ans = inputField.value.trim();
     
-    // 全角英数字を半角に、全角マイナスを半角に変換する関数
     const normalize = (str) => {
-        return str.replace(/[！-～]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xfee0)) // 英数字を半角へ
-                  .replace(/ー|−|－/g, '-') // 各種伸ばし棒・全角マイナスを半角ハイフンへ
-                  .replace(/\s+/g, '');    // 中間のスペースも削除
+        if (!str) return "";
+        return str.toString()
+                  .replace(/[！-～]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xfee0))
+                  .replace(/ー|−|－/g, '-')
+                  .replace(/\s+/g, '');
     };
 
     const cleanAns = normalize(ans);
     const cleanCorrectAns = normalize(q.ans);
     
-    const q = (currentMode === "diagnostic") ? diagnosticQuestions[currentStep] : practiceQuestions[currentStep];
-    const isCorrect = (cleanAns === cleanCorrectAns); // 整えた後の値で比較
-    // --- 修正ここまで ---
+    const isCorrect = (cleanAns === cleanCorrectAns);
     const currentLv = q.lv || 0;
 
+    // Firebaseにログを保存（ここで lv が undefined にならないよう currentLv を使う）
     await set(ref(db, `logs/${currentUser}/${Date.now()}`), { ans, isCorrect, lv: currentLv });
 
     // 解説パネルの表示
     document.getElementById('feedback-result').innerText = isCorrect ? "○ 正解" : "× 不正解";
     
-    // AI解説の構築
     const config = levelMaster.find(l => l.lv === currentLv);
     document.getElementById('ai-comment').innerHTML = isCorrect ? 
         "正解です！この調子でいきましょう。" : 
         `正解は <b>${q.ans}</b> です。<br><br>【AI解説】<br>${config ? config.hint : "公式を確認してみよう！"}`;
     
     document.getElementById('feedback-panel').classList.add('show');
-    document.getElementById('feedback-panel').dataset.isCorrect = isCorrect; // 判定保持
+    document.getElementById('feedback-panel').dataset.isCorrect = isCorrect;
 };
 
 async function finishDiagnostic() {
