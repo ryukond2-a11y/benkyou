@@ -40,10 +40,21 @@ const levelMaster = [
 ];
 
 const questions = [
-    { unit: "正負の数", text: "(-8) + (+5) は？", ans: "-3", level: 1 },
-    { unit: "文字の式", text: "3x - 5x は？", ans: "-2x", level: 2 },
-    { unit: "一次方程式", text: "2x + 6 = 10 の x は？", ans: "2", level: 3 },
-    { unit: "連立方程式", text: "x + y = 5, x - y = 1 のとき x は？", ans: "3", level: 4 }
+    { lv: 1, unit: "正負の数", text: "(-8) + (+5) は？", ans: "-3" },
+    { lv: 2, unit: "正負の数", text: "(-2) × (-7) は？", ans: "14" },
+    { lv: 3, unit: "正負の数", text: "(-3)^2 - 5 は？", ans: "4" },
+    { lv: 4, unit: "文字の式", text: "3x - 5x は？", ans: "-2x" },
+    { lv: 5, unit: "文字の式", text: "x=4のとき、5x-3の値は？", ans: "17" },
+    { lv: 6, unit: "一次方程式", text: "x + 7 = 3 の x は？", ans: "-4" },
+    { lv: 7, unit: "一次方程式", text: "4x = 12 の x は？", ans: "3" },
+    { lv: 8, unit: "一次方程式", text: "2x + 6 = 10 の x は？", ans: "2" },
+    { lv: 9, unit: "一次方程式", text: "3x - 8 = x の x は？", ans: "4" },
+    { lv: 10, unit: "比例・反比例", text: "yはxに比例しx=2のときy=6。比例定数は？", ans: "3" },
+    { lv: 11, unit: "比例・反比例", text: "yはxに反比例しx=3のときy=4。x=6のときyは？", ans: "2" },
+    { lv: 12, unit: "平面図形", text: "半径6cm、中心角60度のおうぎ形の弧の長さは？(πを用いて回答)", ans: "2π" },
+    { lv: 13, unit: "空間図形", text: "底面積10, 高さ6の三角柱の体積は？", ans: "60" },
+    { lv: 14, unit: "空間図形", text: "半径3cmの球の表面積は？(πを用いて回答)", ans: "36π" },
+    { lv: 15, unit: "データの活用", text: "3, 7, 11, 19の4つのデータの平均値は？", ans: "10" }
 ];
 
 // --- 認証・画面遷移 ---
@@ -71,21 +82,33 @@ window.processAuth = async () => {
         if (snap.exists() && snap.val().password === pass) {
             currentUser = user;
             const userData = snap.val();
+            
+            // ログイン画面（auth-form）を隠す
+            document.getElementById('auth-form').classList.add('hidden');
+
             if (userData.hasTakenTest) {
+                // 2回目以降：直接メニュー（ロードマップ）へ
                 showMenu(); 
             } else {
+                // 初回：診断モードに設定して、即診断開始（問題数選択は出さない）
                 currentMode = "diagnostic";
-                goToSettings(); 
+                totalQuestions = 4; // 診断は4問固定
+                document.getElementById('test-section').classList.remove('hidden');
+                loadQuestion();
             }
         } else {
             alert("ユーザー名かパスワードが違います");
         }
     } else {
+        // 新規登録時も同様に即診断へ
         if (snap.exists()) return alert("既に存在するユーザー名です");
         await set(userRef, { password: pass, level: 0, hasTakenTest: false });
         currentUser = user;
         currentMode = "diagnostic";
-        goToSettings();
+        totalQuestions = 4;
+        document.getElementById('auth-form').classList.add('hidden');
+        document.getElementById('test-section').classList.remove('hidden');
+        loadQuestion();
     }
 };
 
@@ -195,12 +218,28 @@ function showMenu() {
 
 window.startUnit = (lv) => {
     currentMode = "practice";
+    selectedLevel = lv; // 選んだレベルを一時保持
     currentStep = 0;
-    practiceQuestions = [];
-    for (let i = 0; i < totalQuestions; i++) {
-        practiceQuestions.push(generateAIQuestion(lv));
-    }
+    
+    // メニューを隠して、問題数選択画面を出す
     document.getElementById('menu-section').classList.add('hidden');
+    document.getElementById('settings-section').classList.remove('hidden');
+};
+
+// 問題数選択ボタン（setCount）の修正
+window.setCount = (num) => {
+    totalQuestions = num;
+    practiceQuestions = [];
+    
+    // 演習モードなら、選んだレベルの問題を指定数生成
+    if (currentMode === "practice") {
+        for (let i = 0; i < totalQuestions; i++) {
+            practiceQuestions.push(generateAIQuestion(selectedLevel));
+        }
+    }
+    
+    document.getElementById('settings-section').classList.add('hidden');
     document.getElementById('test-section').classList.remove('hidden');
+    document.getElementById('total-step-display').innerText = totalQuestions;
     loadQuestion();
 };
