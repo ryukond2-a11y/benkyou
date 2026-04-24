@@ -115,31 +115,85 @@ function generateAIQuestion(lv) {
     const r = (max, min = 1) => Math.floor(Math.random() * (max - min + 1)) + min;
     const nz = (max, min = 1) => Math.random() > 0.5 ? r(max, min) : -r(max, min);
 
-    switch(lv) {
-        case 1:
+   switch(lv) {
+        case 1: // 正負の数（加減）
             const a1 = nz(15), b1 = nz(15);
             text = `(${a1}) + (${b1}) は？`;
             ans = (a1 + b1).toString();
             break;
-        case 2:
+        case 2: // 正負の数（乗除）
             const a2 = nz(9), b2 = nz(9);
             text = `(${a2}) × (${b2}) は？`;
             ans = (a2 * b2).toString();
             break;
-        case 7:
+        case 3: // 累乗・四則混合
+            const a3 = r(5, 2);
+            text = `(-${a3})^2 - ${r(10)} は？`;
+            ans = (Math.pow(a3, 2) - (r(10))).toString();
+            break;
+        case 4: // 文字式の表し方
+            const a4 = r(10, 2);
+            text = `x × (-${a4}) を文字式のルールで書くと？`;
+            ans = `-${a4}x`;
+            break;
+        case 5: // 式の計算（加減）
+            const a5 = r(10, 2), b5 = r(10, 2);
+            text = `${a5}x - ${b5}x は？`;
+            ans = (a5 - b5) + "x";
+            break;
+        case 6: // 等式の性質
+            const a6 = r(20, 5);
+            text = `x + ${a6} = 100 の両辺から${a6}を引くと、x = ？`;
+            ans = (100 - a6).toString();
+            break;
+        case 7: // 一次方程式の解法
             const x7 = nz(10), a7 = r(9, 2);
             text = `${a7}x = ${a7 * x7} の x は？`;
             ans = x7.toString();
             break;
-        case 13:
+        case 8: // 方程式（移行）
+            const x8 = r(10), a8 = r(10);
+            text = `x - ${a8} = ${x8} の -${a8}を移行した式は、x = ${x8} + ？`;
+            ans = a8.toString();
+            break;
+        case 9: // 方程式（複雑）
+            const x9 = r(5), a9 = r(4, 2);
+            text = `${a9}(x + 1) = ${a9 * (x9 + 1)} の x は？`;
+            ans = x9.toString();
+            break;
+        case 10: // 比例の式
+            const a10 = r(8, 2);
+            text = `yはxに比例し、比例定数が${a10}のとき、yをxの式で表すと？`;
+            ans = `y=${a10}x`;
+            break;
+        case 11: // 反比例の式
+            const a11 = r(24, 6);
+            text = `yはxに反比例し、x=1のときy=${a11}。比例定数aは？`;
+            ans = a11.toString();
+            break;
+        case 12: // おうぎ形の計算
+            const r12 = r(10, 2);
+            text = `半径${r12}cm、中心角180度のおうぎ形の弧の長さは？(πを用いる)`;
+            ans = `${r12}π`;
+            break;
+        case 13: // 柱体の体積
             const b13 = r(20, 5), h13 = r(15, 5);
-            text = `底面積 ${b13}、高さ ${h13} の三角柱の体積は？`;
+            text = `底面積 ${b13}、高さ ${h13} の柱体の体積は？`;
             ans = (b13 * h13).toString();
             break;
+        case 14: // 球の計算
+            const r14 = r(5, 1);
+            text = `半径${r14}cmの球の表面積は？(4πr^2を用いる、πを付けて回答)`;
+            ans = (4 * r14 * r14) + "π";
+            break;
+        case 15: // 平均・中央値
+            const n1 = r(10), n2 = r(10), n3 = r(10);
+            text = `${n1}, ${n2}, ${n3} の3つのデータの平均値は？(整数で回答)`;
+            ans = Math.round((n1 + n2 + n3) / 3).toString();
+            break;
         default:
-            // 修正：固定テキストではなくレベルのタイトルを出す
-            text = `${config.title}の演習問題`;
-            ans = "1";
+            text = "問題データがありません";
+            ans = "0";
     }
     return { unit: config.unit, text: text, ans: ans, lv: lv, hint: config.hint };
 }
