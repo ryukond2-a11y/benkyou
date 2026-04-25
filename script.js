@@ -341,9 +341,32 @@ window.showMenu = () => {
         renderLevelMenu();
     }
 };
-import { ref, get } from "https://www.gstatic.com/firebasejs/10.x.x/firebase-database.js";
+// --- 連続学習ランキング機能 ---
 
-async function showStreakRanking() {
+// ランキングを画面に表示するパーツ（追加）
+function renderRankingUI(list) {
+    const container = document.getElementById('ranking-display');
+    if (!container) return;
+    
+    container.innerHTML = "<h3>🔥 連続学習ランキング</h3>";
+    
+    list.forEach((user, index) => {
+        const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}位`;
+        container.innerHTML += `
+            <div style="padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                <span>${medal} <strong>${user.name}</strong></span>
+                <span style="color: #ff5722; font-weight: bold;">${user.streak}日連続 🔥</span>
+            </div>
+        `;
+    });
+}
+
+// 過去のタイムスタンプを全て解析してランキングを作る（修正版）
+window.showStreakRanking = async () => {
+    showSection('ranking-section'); // ランキング画面を表示
+    const container = document.getElementById('ranking-display');
+    if (container) container.innerHTML = "集計中...";
+
     const dbRef = ref(db, 'users');
     const snapshot = await get(dbRef);
     const allData = snapshot.val();
@@ -352,13 +375,12 @@ async function showStreakRanking() {
 
     const rankingList = [];
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // 今日の0時0分
+    today.setHours(0, 0, 0, 0);
 
-    // 全ユーザーをループで回す
     for (const userName in allData) {
         const userRecords = allData[userName];
         
-        // 数値形式のキー（タイムスタンプ）だけを抽出してソート
+        // キーから数値（タイムスタンプ）だけを抜き出す
         const timestamps = Object.keys(userRecords)
             .filter(key => !isNaN(key))
             .map(Number)
@@ -366,23 +388,19 @@ async function showStreakRanking() {
 
         if (timestamps.length === 0) continue;
 
-        // ストリーク計算ロジック
         let streak = 0;
         let lastDateChecked = null;
 
-        // 最新の記録から過去に遡ってチェック
         for (let i = timestamps.length - 1; i >= 0; i--) {
             const currentDate = new Date(timestamps[i]);
             currentDate.setHours(0, 0, 0, 0);
 
             if (lastDateChecked === null) {
-                // 最新の記録が「今日」か「昨日」ならカウント開始
                 const diffToToday = (today - currentDate) / (1000 * 60 * 60 * 24);
                 if (diffToToday <= 1) {
                     streak = 1;
                     lastDateChecked = currentDate;
                 } else {
-                    // 最新が2日以上前ならストリークは0（途切れている）
                     streak = 0;
                     break;
                 }
@@ -392,24 +410,39 @@ async function showStreakRanking() {
                     streak++;
                     lastDateChecked = currentDate;
                 } else if (diff > 1) {
-                    break; // 2日以上空いたので終了
+                    break;
                 }
-                // diffが0（同じ日に複数回実施）の場合は何もしないで次へ
             }
         }
-
         rankingList.push({ name: userName, streak: streak });
     }
 
-    // ストリーク数で並び替え
     rankingList.sort((a, b) => b.streak - a.streak);
-
-    // HTMLへの表示処理
     renderRankingUI(rankingList);
-}
-// --- 修正：演習開始ボタン ---
+};
+
+// --- メニュー画面の表示（ランキングボタンを追加） ---
+window.showMenu = () => {
+    showSection('menu-section');
+    
+    const banner = document.getElementById('recommendation-banner');
+    if (banner) {
+        banner.innerHTML = `
+            <h3>現在の到達レベル: Lv.${userScore}</h3>
+            <button onclick="showStreakRanking()" style="background: #ff5722; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-top: 10px;">
+                🔥 連続学習ランキングを見る
+            </button>
+        `;
+    }
+
+    if (typeof renderLevelMenu === 'function') {
+        renderLevelMenu();
+    }
+};
+
+// --- 演習開始ボタン ---
 window.startUnit = (lv) => {
-    selectedLv = lv; // レベルを覚えさせる
+    selectedLv = lv; 
     currentMode = "practice";
-    showSection('settings-section'); // まず問題数選択へ飛ばす
+    showSection('settings-section'); 
 };
