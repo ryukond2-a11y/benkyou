@@ -341,48 +341,72 @@ window.showMenu = () => {
         renderLevelMenu();
     }
 };
-window.showRanking = async () => {
-    showSection('ranking-section');
-    const rankingBody = document.getElementById('ranking-body');
-    rankingBody.innerHTML = "<tr><td colspan='3'>読み込み中...</td></tr>";
+import { ref, get } from "https://www.gstatic.com/firebasejs/10.x.x/firebase-database.js";
 
-    try {
-        // 全ユーザーのログを取得
-        const logsSnap = await get(ref(db, 'logs'));
-        if (!logsSnap.exists()) {
-            rankingBody.innerHTML = "<tr><td colspan='3'>データがありません</td></tr>";
-            return;
+async function showStreakRanking() {
+    const dbRef = ref(db, 'users');
+    const snapshot = await get(dbRef);
+    const allData = snapshot.val();
+
+    if (!allData) return;
+
+    const rankingList = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // 今日の0時0分
+
+    // 全ユーザーをループで回す
+    for (const userName in allData) {
+        const userRecords = allData[userName];
+        
+        // 数値形式のキー（タイムスタンプ）だけを抽出してソート
+        const timestamps = Object.keys(userRecords)
+            .filter(key => !isNaN(key))
+            .map(Number)
+            .sort((a, b) => a - b);
+
+        if (timestamps.length === 0) continue;
+
+        // ストリーク計算ロジック
+        let streak = 0;
+        let lastDateChecked = null;
+
+        // 最新の記録から過去に遡ってチェック
+        for (let i = timestamps.length - 1; i >= 0; i--) {
+            const currentDate = new Date(timestamps[i]);
+            currentDate.setHours(0, 0, 0, 0);
+
+            if (lastDateChecked === null) {
+                // 最新の記録が「今日」か「昨日」ならカウント開始
+                const diffToToday = (today - currentDate) / (1000 * 60 * 60 * 24);
+                if (diffToToday <= 1) {
+                    streak = 1;
+                    lastDateChecked = currentDate;
+                } else {
+                    // 最新が2日以上前ならストリークは0（途切れている）
+                    streak = 0;
+                    break;
+                }
+            } else {
+                const diff = (lastDateChecked - currentDate) / (1000 * 60 * 60 * 24);
+                if (diff === 1) {
+                    streak++;
+                    lastDateChecked = currentDate;
+                } else if (diff > 1) {
+                    break; // 2日以上空いたので終了
+                }
+                // diffが0（同じ日に複数回実施）の場合は何もしないで次へ
+            }
         }
 
-        const allLogs = logsSnap.val();
-        const rankingData = [];
-
-        // ユーザーごとにログの数を数える
-        for (const username in allLogs) {
-            const solveCount = Object.keys(allLogs[username]).length;
-            rankingData.push({ name: username, count: solveCount });
-        }
-
-        // 挑戦数が多い順に並び替え
-        rankingData.sort((a, b) => b.count - a.count);
-
-        // テーブルに表示
-        rankingBody.innerHTML = "";
-        rankingData.forEach((data, index) => {
-            const row = `
-                <tr style="border-bottom: 1px solid #eee; height: 40px;">
-                    <td>${index + 1}位</td>
-                    <td>${data.name}</td>
-                    <td><b>${data.count}</b> 問</td>
-                </tr>
-            `;
-            rankingBody.innerHTML += row;
-        });
-    } catch (e) {
-        console.error(e);
-        rankingBody.innerHTML = "<tr><td colspan='3'>エラーが発生しました</td></tr>";
+        rankingList.push({ name: userName, streak: streak });
     }
-};
+
+    // ストリーク数で並び替え
+    rankingList.sort((a, b) => b.streak - a.streak);
+
+    // HTMLへの表示処理
+    renderRankingUI(rankingList);
+}
 // --- 修正：演習開始ボタン ---
 window.startUnit = (lv) => {
     selectedLv = lv; // レベルを覚えさせる
