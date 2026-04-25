@@ -341,108 +341,51 @@ window.showMenu = () => {
         renderLevelMenu();
     }
 };
-// --- 連続学習ランキング機能 ---
+window.showRanking = async () => {
+    showSection('ranking-section');
+    const rankingBody = document.getElementById('ranking-body');
+    rankingBody.innerHTML = "<tr><td colspan='3'>読み込み中...</td></tr>";
 
-// ランキングを画面に表示するパーツ（追加）
-function renderRankingUI(list) {
-    const container = document.getElementById('ranking-display');
-    if (!container) return;
-    
-    container.innerHTML = "<h3>🔥 連続学習ランキング</h3>";
-    
-    list.forEach((user, index) => {
-        const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}位`;
-        container.innerHTML += `
-            <div style="padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-                <span>${medal} <strong>${user.name}</strong></span>
-                <span style="color: #ff5722; font-weight: bold;">${user.streak}日連続 🔥</span>
-            </div>
-        `;
-    });
-}
-
-// 過去のタイムスタンプを全て解析してランキングを作る（修正版）
-window.showStreakRanking = async () => {
-    showSection('ranking-section'); // ランキング画面を表示
-    const container = document.getElementById('ranking-display');
-    if (container) container.innerHTML = "集計中...";
-
-    const dbRef = ref(db, 'users');
-    const snapshot = await get(dbRef);
-    const allData = snapshot.val();
-
-    if (!allData) return;
-
-    const rankingList = [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    for (const userName in allData) {
-        const userRecords = allData[userName];
-        
-        // キーから数値（タイムスタンプ）だけを抜き出す
-        const timestamps = Object.keys(userRecords)
-            .filter(key => !isNaN(key))
-            .map(Number)
-            .sort((a, b) => a - b);
-
-        if (timestamps.length === 0) continue;
-
-        let streak = 0;
-        let lastDateChecked = null;
-
-        for (let i = timestamps.length - 1; i >= 0; i--) {
-            const currentDate = new Date(timestamps[i]);
-            currentDate.setHours(0, 0, 0, 0);
-
-            if (lastDateChecked === null) {
-                const diffToToday = (today - currentDate) / (1000 * 60 * 60 * 24);
-                if (diffToToday <= 1) {
-                    streak = 1;
-                    lastDateChecked = currentDate;
-                } else {
-                    streak = 0;
-                    break;
-                }
-            } else {
-                const diff = (lastDateChecked - currentDate) / (1000 * 60 * 60 * 24);
-                if (diff === 1) {
-                    streak++;
-                    lastDateChecked = currentDate;
-                } else if (diff > 1) {
-                    break;
-                }
-            }
+    try {
+        // 全ユーザーのログを取得
+        const logsSnap = await get(ref(db, 'logs'));
+        if (!logsSnap.exists()) {
+            rankingBody.innerHTML = "<tr><td colspan='3'>データがありません</td></tr>";
+            return;
         }
-        rankingList.push({ name: userName, streak: streak });
-    }
 
-    rankingList.sort((a, b) => b.streak - a.streak);
-    renderRankingUI(rankingList);
+        const allLogs = logsSnap.val();
+        const rankingData = [];
+
+        // ユーザーごとにログの数を数える
+        for (const username in allLogs) {
+            const solveCount = Object.keys(allLogs[username]).length;
+            rankingData.push({ name: username, count: solveCount });
+        }
+
+        // 挑戦数が多い順に並び替え
+        rankingData.sort((a, b) => b.count - a.count);
+
+        // テーブルに表示
+        rankingBody.innerHTML = "";
+        rankingData.forEach((data, index) => {
+            const row = `
+                <tr style="border-bottom: 1px solid #eee; height: 40px;">
+                    <td>${index + 1}位</td>
+                    <td>${data.name}</td>
+                    <td><b>${data.count}</b> 問</td>
+                </tr>
+            `;
+            rankingBody.innerHTML += row;
+        });
+    } catch (e) {
+        console.error(e);
+        rankingBody.innerHTML = "<tr><td colspan='3'>エラーが発生しました</td></tr>";
+    }
 };
-
-// --- メニュー画面の表示（ランキングボタンを追加） ---
-window.showMenu = () => {
-    showSection('menu-section');
-    
-    const banner = document.getElementById('recommendation-banner');
-    if (banner) {
-        banner.innerHTML = `
-            <h3>現在の到達レベル: Lv.${userScore}</h3>
-            <button onclick="showStreakRanking()" style="background: #ff5722; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-top: 10px;">
-                🔥 連続学習ランキングを見る
-            </button>
-        `;
-    }
-
-    if (typeof renderLevelMenu === 'function') {
-        renderLevelMenu();
-    }
-};
-
-// --- 演習開始ボタン ---
+// --- 修正：演習開始ボタン ---
 window.startUnit = (lv) => {
-    selectedLv = lv; 
+    selectedLv = lv; // レベルを覚えさせる
     currentMode = "practice";
-    showSection('settings-section'); 
+    showSection('settings-section'); // まず問題数選択へ飛ばす
 };
