@@ -73,23 +73,13 @@
             </div>
         </section>
 
-        <section id="ranking-section" class="card hidden">
-            <h2>🔥 挑戦問題数ランキング</h2>
-            <div style="max-height: 400px; overflow-y: auto;">
-                <table id="ranking-table" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid #ddd;">
-                            <th>順位</th>
-                            <th>ユーザー</th>
-                            <th>挑戦数</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ranking-body"></tbody>
-                </table>
-            </div>
-            <button class="btn-flat" onclick="showMenu()" style="margin-top: 20px;">メニューに戻る</button>
-        </section>
-
+       <section id="ranking-section" class="card hidden">
+    <div id="ranking-display">
+        </div>
+    <button onclick="showMenu()" style="margin-top: 20px; width: 100%; padding: 10px; border-radius: 8px; border: none; background: #eee; cursor: pointer;">
+        メニューに戻る
+    </button>
+</section>
         <div id="feedback-panel" class="panel">
             <h3 id="feedback-result">結果</h3>
             <div class="ai-box">
