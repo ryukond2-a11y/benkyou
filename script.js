@@ -148,10 +148,12 @@ function generateAIQuestion(lv) {
             ans = (a2 * b2).toString();
             break;
         case 3: // 累乗・四則混合
-            const a3 = r(5, 2);
-            text = `(-${a3})^2 - ${r(10)} は？`;
-            ans = (Math.pow(a3, 2) - (r(10))).toString();
-            break;
+    const a3 = r(5, 2);
+    const b3 = r(10); // 引く数を固定する
+    text = `(-${a3})^2 - ${b3} は？`;
+    ans = (Math.pow(a3, 2) - b3).toString(); // 同じ b3 を使う
+    break;
+
         case 4: // 文字式の表し方
             const a4 = r(10, 2);
             text = `x × (-${a4}) を文字式のルールで書くと？`;
