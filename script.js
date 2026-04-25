@@ -148,17 +148,28 @@ function generateAIQuestion(lv) {
             ans = (a2 * b2).toString();
             break;
         case 3: // 累乗・四則混合
-    const a3 = r(5, 2);
-    const b3 = r(10); // 引く数を固定する
-    text = `(-${a3})^2 - ${b3} は？`;
-    ans = (Math.pow(a3, 2) - b3).toString(); // 同じ b3 を使う
-    break;
+    　　const a3 = r(5, 2);
+    　　const b3 = r(10); // 引く数を固定する
+           text = `(-${a3})^2 - ${b3} は？`;
+           ans = (Math.pow(a3, 2) - b3).toString(); // 同じ b3 を使う
+           break;
 
-        case 4: // 文字式の表し方
-            const a4 = r(10, 2);
-            text = `x × (-${a4}) を文字式のルールで書くと？`;
-            ans = `-${a4}x`;
-            break;
+        case 4: // 文字式の加減
+           const a4 = r(10);
+           const b4 = r(10);text = `${a4}x - ${b4}x は？`;
+    
+    // 計算結果が0なら "0"、それ以外なら "数字x" に
+           const result = a4 - b4;
+           if (result === 0) {
+               ans = "0";
+           } else if (result === 1) {
+               ans = "x";  // 1xとは書かないルールもついでにカバー！
+           } else if (result === -1) {
+               ans = "-x"; // -1xとは書かない
+           } else {
+               ans = result + "x";
+           }
+           break;
         case 5: // 式の計算（加減）
             const a5 = r(10, 2), b5 = r(10, 2);
             text = `${a5}x - ${b5}x は？`;
