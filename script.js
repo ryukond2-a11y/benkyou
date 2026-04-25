@@ -127,7 +127,99 @@ window.processAuth = async () => {
         showSection('settings-section');
     }
 };
+async function updateMyStreak(userId) {
+    const userLogRef = firebase.database().ref('logs/' + userId);
+    
+    // 1. 今のログを全部取ってくる
+    const snapshot = await userLogRef.once('value');
+    const logsObj = snapshot.val() || {};
+    // キー（1777...）を配列にする
+    const logTimestamps = Object.keys(logsObj);
 
+    // 2. 今回の正解ログも追加（現在時刻）
+    const nowTs = Date.now();
+    logTimestamps.push(nowTs);
+    
+    // 3. 連続日数を計算
+    const newStreak = calculateStreakFromLogs(logTimestamps);
+
+    // 4. logsに新しいログを追加し、streakという項目も更新する
+    const updates = {};
+    updates['logs/' + userId + '/' + nowTs] = true; // ログ追加
+    updates['users/' + userId + '/streak'] = newStreak; // ストリーク保存
+    updates['users/' + userId + '/lastUpdate'] = nowTs;
+
+    return firebase.database().ref().update(updates);
+}
+// 過去のタイムスタンプ（文字列の配列を想定）から連続日数を計算する関数
+// logsにあるミリ秒のリストから連続日数を計算する
+function calculateStreakFromLogs(logTimestamps) {
+    if (!logTimestamps || logTimestamps.length === 0) return 0;
+
+    // ミリ秒を「yyyy-mm-dd」形式の文字列に変換して、重複を除去
+    const dateStrings = logTimestamps.map(ts => {
+        const d = new Date(Number(ts));
+        return d.getFullYear() + '-' + (d.getMonth() + 1).toString().padStart(2, '0') + '-' + d.getDate().toString().padStart(2, '0');
+    });
+
+    // 新しい順（降順）に並べ替え
+    const uniqueDates = [...new Set(dateStrings)].sort().reverse();
+
+    const now = new Date();
+    const today = now.getFullYear() + '-' + (now.getMonth() + 1).toString().padStart(2, '0') + '-' + now.getDate().toString().padStart(2, '0');
+    
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.getFullYear() + '-' + (yesterday.getMonth() + 1).toString().padStart(2, '0') + '-' + yesterday.getDate().toString().padStart(2, '0');
+
+    // 最新のログが今日でも昨日でもなければストリーク終了
+    if (uniqueDates[0] !== today && uniqueDates[0] !== yesterdayStr) {
+        return 1; // 今回解いた分だけ
+    }
+
+    let streak = 0;
+    let checkDate = new Date(uniqueDates[0]);
+
+    for (let i = 0; i < uniqueDates.length; i++) {
+        const dStr = checkDate.getFullYear() + '-' + (checkDate.getMonth() + 1).toString().padStart(2, '0') + '-' + checkDate.getDate().toString().padStart(2, '0');
+        if (uniqueDates[i] === dStr) {
+            streak++;
+            checkDate.setDate(checkDate.getDate() - 1); // 1日戻す
+        } else {
+            break;
+        }
+    }
+    return streak;
+}
+// 正解した時のDB更新処理
+async function handleCorrectAnswerUpdate(userId) {
+    const userRef = db.collection('users').doc(userId);
+    const doc = await userRef.get();
+    const now = new Date();
+    const todayStr = now.toLocaleDateString('sv-SE');
+
+    if (doc.exists) {
+        const data = doc.data();
+        let history = data.solveHistory || []; // タイムスタンプの配列
+
+        // 1. 今回のタイムスタンプを追加
+        if (!history.includes(todayStr)) {
+            history.push(todayStr);
+        }
+
+        // 2. 履歴全体から最新の連続日数を計算
+        const newStreak = calculateStreak(history);
+
+        // 3. DBを更新
+        await userRef.update({
+            solveHistory: history,
+            streak: newStreak,
+            lastUpdate: todayStr
+        });
+
+        console.log(`データ反映完了！現在の記録: ${newStreak}日連続`);
+    }
+}
 // --- AI問題生成ロジック（修正：レベル名反映） ---
 function generateAIQuestion(lv) {
     const config = levelMaster.find(l => l.lv === lv) || levelMaster[0];
