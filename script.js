@@ -127,27 +127,32 @@ window.processAuth = async () => {
         showSection('settings-section');
     }
 };
-async function updateMyStreak(userId) {
-    const userLogRef = firebase.database().ref('logs/' + userId);
+async function updateMyStreak(userName) {
+    // 1. logsの中からそのユーザーの記録を取得 (例: logs/0407)
+    // ※ログイン時に使ったパスワード(0407など)がlogsのキーになっている前提です
+    const password = "0407"; // ここは実際にはログイン中のユーザーのパスワード変数を入れてください
+    const logRef = firebase.database().ref('logs/' + password);
     
-    // 1. 今のログを全部取ってくる
-    const snapshot = await userLogRef.once('value');
+    const snapshot = await logRef.once('value');
     const logsObj = snapshot.val() || {};
-    // キー（1777...）を配列にする
     const logTimestamps = Object.keys(logsObj);
 
     // 2. 今回の正解ログも追加（現在時刻）
     const nowTs = Date.now();
     logTimestamps.push(nowTs);
     
-    // 3. 連続日数を計算
+    // 3. 連続日数を計算（前の回答の calculateStreakFromLogs を使います）
     const newStreak = calculateStreakFromLogs(logTimestamps);
 
-    // 4. logsに新しいログを追加し、streakという項目も更新する
+    // 4. 反映（パスワードをキーに logs を更新し、名前をキーに users 側を更新）
     const updates = {};
-    updates['logs/' + userId + '/' + nowTs] = true; // ログ追加
-    updates['users/' + userId + '/streak'] = newStreak; // ストリーク保存
-    updates['users/' + userId + '/lastUpdate'] = nowTs;
+    // logs 側を更新
+    updates['logs/' + password + '/' + nowTs] = true;
+    
+    // users 側（名前がキーになっている場所）を更新
+    // userName には "根田" や "その" が入るようにしてください
+    updates['users/' + userName + '/streak'] = newStreak;
+    updates['users/' + userName + '/lastUpdate'] = nowTs;
 
     return firebase.database().ref().update(updates);
 }
