@@ -60,11 +60,12 @@ const diagnosticQuestions = [
 ];
 // 回答の全角・半角や空白を整える関数
 // 回答の全角・半角や空白、似た記号を整える関数
+// 回答の全角・半角や空白、似た記号を整える関数
 function normalize(str) {
     if (!str) return "";
     return str.toString()
         .replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xfee0)) // 全角→半角
-        .replace(/[ー—－]/g, "-") // ★ここを追加：長音や全角マイナスを「-」に統一
+        .replace(/[ー—－‐]/g, "-") // ★のばし棒、ダッシュ、全角マイナスをすべて半角の「-」に変換
         .replace(/\s+/g, "")      // 空白消去
         .toLowerCase();           // 小文字化
 }
