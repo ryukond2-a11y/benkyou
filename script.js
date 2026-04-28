@@ -425,29 +425,29 @@ window.handleAnswer = async () => {
     const q = (currentMode === "diagnostic") ? diagnosticQuestions[currentStep] : practiceQuestions[currentStep];
 
     let ans = inputField.value.trim();
-    // normalize処理は既存のものを活用
+    // normalize関数は以前のものをそのまま使ってください
     const isCorrect = (normalize(ans) === normalize(q.ans));
     const currentLv = q.lv || 0;
 
-    // --- 解説パネルの要素取得 ---
     const feedbackPanel = document.getElementById('feedback-panel');
     const aiComment = document.getElementById('ai-comment');
     const feedbackResult = document.getElementById('feedback-result');
 
-    // 結果と解説文のセット
+    // 結果の文字と色をセット
     feedbackResult.innerText = isCorrect ? "○ 正解" : "× 不正解";
-    feedbackResult.style.color = isCorrect ? "#4caf50" : "#f44336";
+    feedbackResult.style.color = isCorrect ? "var(--success)" : "var(--error)"; // CSSの変数を使用
 
+    // 解説文をセット
     const config = levelMaster.find(l => l.lv === currentLv);
     aiComment.innerHTML = isCorrect ? 
-        "正解です！この調子でいきましょう。" : 
-        `正解は <b>${q.ans}</b> です。<br><br><div style="background:#f0f7ff; padding:12px; border-radius:8px; border-left:4px solid #4a90e2;">【AI解説】<br>${config ? config.hint : "公式を確認してみよう！"}</div>`;
+        "正解です！その調子！" : 
+        `正解は <b>${q.ans}</b> です。<br><br><div class="ai-box">【AI解説】<br>${config ? config.hint : "公式をチェック！"}</div>`;
     
-    // --- 【重要】ポップアップを表示する ---
+    // --- 【重要】CSSのアニメーションを発動させる ---
     feedbackPanel.classList.add('show');
     feedbackPanel.dataset.isCorrect = isCorrect;
 
-    // --- 【重要】KaTeXで数式をレンダリングする ---
+    // --- 【重要】KaTeXで数式を変換する ---
     if (window.renderMathInElement) {
         renderMathInElement(aiComment, {
             delimiters: [
@@ -458,10 +458,9 @@ window.handleAnswer = async () => {
         });
     }
 
-    // Firebaseへの保存処理
+    // Firebaseへ保存
     await set(ref(db, `logs/${currentUser}/${Date.now()}`), { ans, isCorrect, lv: currentLv });
 };
-
 async function finishDiagnostic() {
     await set(ref(db, `users/${currentUser}/hasTakenTest`), true);
     await set(ref(db, `users/${currentUser}/level`), userScore);
