@@ -58,6 +58,14 @@ const diagnosticQuestions = [
     { lv: 14, unit: "空間図形", text: "半径3cmの球の表面積は？(πを用いて回答)", ans: "36π" },
     { lv: 15, unit: "データの活用", text: "3, 7, 11, 19の4つのデータの平均値は？", ans: "10" }
 ];
+// 回答の全角・半角や空白を整える関数
+function normalize(str) {
+    if (!str) return "";
+    return str.toString()
+        .replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xfee0)) // 全角→半角
+        .replace(/\s+/g, "") // 空白消去
+        .toLowerCase();      // 小文字化
+}
 // レベルメニューを動的に生成する関数
 function renderLevelMenu() {
     const container = document.querySelector('.unit-list-container');
@@ -470,23 +478,27 @@ async function finishDiagnostic() {
 // --- 修正：解説後に次へ行くか終了するか ---
 window.nextQuestion = () => {
     const isCorrect = document.getElementById('feedback-panel').dataset.isCorrect === "true";
-    if (isCorrect) userScore++; // 正解数をカウント
+    if (isCorrect) userScore++; 
 
     document.getElementById('feedback-panel').classList.remove('show');
 
     if (currentMode === "diagnostic") {
-        // ...既存の診断テスト処理...
+        // --- 診断テストの進行ロジックを追加 ---
+        currentStep++;
+        if (currentStep < diagnosticQuestions.length) {
+            loadQuestion();
+        } else {
+            finishDiagnostic(); // 15問終わったら終了
+        }
     } else {
+        // 演習 or 修了テスト
         currentStep++;
         if (currentStep < totalQuestions) {
             loadQuestion();
         } else {
-            // 全問終了時
             if (selectedLv === 16) {
-                // 修了テストなら判定関数へ
                 finishExam(userScore);
             } else {
-                // 普通の演習ならメニューへ
                 alert(`${totalQuestions}問中 ${userScore}問正解でした！`);
                 showMenu();
             }
@@ -495,7 +507,11 @@ window.nextQuestion = () => {
 };
 // 【修正前】 function showMenu() { ... }
 // 【修正後】 以下の形に書き換え
-
+async function finishDiagnostic() {
+    await set(ref(db, `users/${currentUser}/hasTakenTest`), true);
+    await set(ref(db, `users/${currentUser}/level`), userScore);
+    showMenu();
+}
 window.showMenu = () => {
     showSection('menu-section');
     
@@ -515,29 +531,38 @@ window.showRanking = async () => {
     const rankingBody = document.getElementById('ranking-body');
     rankingBody.innerHTML = "<tr><td colspan='3'>読み込み中...</td></tr>";
 
-    const snap = await get(ref(db, 'users'));
-    const users = snap.val();
+    const usersSnap = await get(ref(db, 'users'));
+    const logsSnap = await get(ref(db, 'logs'));
+    const users = usersSnap.val() || {};
+    const allLogs = logsSnap.val() || {};
+    
     const rankingData = [];
 
     for (const name in users) {
+        // logs[ユーザー名] の中にあるデータの数が「挑戦数」
+        let challengeCount = 0;
+        if (allLogs[name]) {
+            challengeCount = Object.keys(allLogs[name]).length;
+        }
+
         rankingData.push({ 
             name: name, 
-            level: users[name].level || 0,
-            isJ1Done: users[name].isJ1Done || false // 修了フラグ
+            challengeCount: challengeCount, // これを表示に使う
+            isJ1Done: users[name].isJ1Done || false 
         });
     }
 
-    // レベル順にソート
-    rankingData.sort((a, b) => b.level - a.level);
+    // 挑戦数が多い順に並び替え
+    rankingData.sort((a, b) => b.challengeCount - a.challengeCount);
 
     rankingBody.innerHTML = "";
     rankingData.forEach((data, index) => {
-        const medal = data.isJ1Done ? "🎓" : ""; // 修了者は🎓マーク
+        const medal = data.isJ1Done ? "🎓" : "";
         const row = `
             <tr style="border-bottom: 1px solid #eee; height: 40px;">
                 <td>${index + 1}位 ${medal}</td>
                 <td>${data.name}</td>
-                <td>Lv.<b>${data.level}</b></td>
+                <td><b>${data.challengeCount}</b> 回</td>
             </tr>
         `;
         rankingBody.innerHTML += row;
