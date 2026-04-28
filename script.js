@@ -127,18 +127,15 @@ function openDashboard() {
 }
 // nextQuestion関数の中で、currentStepが最後まで行った時の判定
 async function finishExam(score) {
-    const passScore = 18; // 20問中18問
+    const passScore = 18; // 20問中18問で合格
     if (score >= passScore) {
-        alert(`【合格】20問中${score}問正解！\n中1数学を修了しました！殿堂入りです。`);
+        alert(`【合格！】20問中${score}問正解！\nおめでとう！君は中1数学マスターだ！🎓`);
         
-        // 殿堂入りフラグをDBに保存
-        const userRef = ref(db, `users/${currentUser}`);
-        await set(ref(db, `users/${currentUser}/isJ1Done`), true); 
-        // 既存のレベルも15に更新しておく
-        await set(ref(db, `users/${currentUser}/level`), 15);
-        
+        // Firebaseに合格記録を保存
+        await set(ref(db, `users/${currentUser}/isJ1Done`), true);
+        await set(ref(db, `users/${currentUser}/level`), 16); // レベルを16(修了)に
     } else {
-        alert(`【不合格】正解数: ${score}/20\nあと${passScore - score}問で合格でした。また挑戦しよう！`);
+        alert(`【不合格】正解数: ${score}/20\n惜しい！あと${passScore - score}問で合格だったよ。復習してまた挑戦しよう！`);
     }
     showMenu();
 }
@@ -385,14 +382,27 @@ function generateAIQuestion(lv) {
 
 // --- 修正：演習前の設定フロー ---
 window.setCount = (num) => {
-    totalQuestions = (currentMode === "diagnostic") ? 15 : num;
     currentStep = 0;
-
-    // 演習モードならここで問題を生成
+    userScore = 0; // テスト中の正解数をカウントするためにリセット
+    
     if (currentMode === "practice") {
         practiceQuestions = [];
-        for (let i = 0; i < totalQuestions; i++) {
-            practiceQuestions.push(generateAIQuestion(selectedLv));
+        
+        // --- 修了テスト(Lv.16)の場合 ---
+        if (selectedLv === 16) {
+            totalQuestions = 20; // 修了テストは20問固定
+            for (let i = 0; i < totalQuestions; i++) {
+                // 1〜15のレベルからランダムに選んで問題を作成
+                const randomLv = Math.floor(Math.random() * 15) + 1;
+                practiceQuestions.push(generateAIQuestion(randomLv));
+            }
+        } 
+        // --- 通常の演習(Lv.1〜15)の場合 ---
+        else {
+            totalQuestions = num;
+            for (let i = 0; i < totalQuestions; i++) {
+                practiceQuestions.push(generateAIQuestion(selectedLv));
+            }
         }
     }
 
@@ -400,7 +410,6 @@ window.setCount = (num) => {
     document.getElementById('total-step-display').innerText = totalQuestions;
     loadQuestion();
 };
-
 function loadQuestion() {
     const q = (currentMode === "diagnostic") ? diagnosticQuestions[currentStep] : practiceQuestions[currentStep];
     if(!q) return showMenu();
@@ -413,40 +422,44 @@ function loadQuestion() {
 
 window.handleAnswer = async () => {
     const inputField = document.getElementById('answer-input');
-    
-    // 1. まず現在の問題「q」を特定する（順番を上に持ってきた）
     const q = (currentMode === "diagnostic") ? diagnosticQuestions[currentStep] : practiceQuestions[currentStep];
 
-    // 2. 入力値のクレンジング
     let ans = inputField.value.trim();
-    
-    const normalize = (str) => {
-        if (!str) return "";
-        return str.toString()
-                  .replace(/[！-～]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xfee0))
-                  .replace(/ー|−|－/g, '-')
-                  .replace(/\s+/g, '');
-    };
-
-    const cleanAns = normalize(ans);
-    const cleanCorrectAns = normalize(q.ans);
-    
-    const isCorrect = (cleanAns === cleanCorrectAns);
+    // normalize処理は既存のものを活用
+    const isCorrect = (normalize(ans) === normalize(q.ans));
     const currentLv = q.lv || 0;
 
-    // Firebaseにログを保存（ここで lv が undefined にならないよう currentLv を使う）
-    await set(ref(db, `logs/${currentUser}/${Date.now()}`), { ans, isCorrect, lv: currentLv });
+    // --- 解説パネルの要素取得 ---
+    const feedbackPanel = document.getElementById('feedback-panel');
+    const aiComment = document.getElementById('ai-comment');
+    const feedbackResult = document.getElementById('feedback-result');
 
-    // 解説パネルの表示
-    document.getElementById('feedback-result').innerText = isCorrect ? "○ 正解" : "× 不正解";
-    
+    // 結果と解説文のセット
+    feedbackResult.innerText = isCorrect ? "○ 正解" : "× 不正解";
+    feedbackResult.style.color = isCorrect ? "#4caf50" : "#f44336";
+
     const config = levelMaster.find(l => l.lv === currentLv);
-    document.getElementById('ai-comment').innerHTML = isCorrect ? 
+    aiComment.innerHTML = isCorrect ? 
         "正解です！この調子でいきましょう。" : 
-        `正解は <b>${q.ans}</b> です。<br><br>【AI解説】<br>${config ? config.hint : "公式を確認してみよう！"}`;
+        `正解は <b>${q.ans}</b> です。<br><br><div style="background:#f0f7ff; padding:12px; border-radius:8px; border-left:4px solid #4a90e2;">【AI解説】<br>${config ? config.hint : "公式を確認してみよう！"}</div>`;
     
-    document.getElementById('feedback-panel').classList.add('show');
-    document.getElementById('feedback-panel').dataset.isCorrect = isCorrect;
+    // --- 【重要】ポップアップを表示する ---
+    feedbackPanel.classList.add('show');
+    feedbackPanel.dataset.isCorrect = isCorrect;
+
+    // --- 【重要】KaTeXで数式をレンダリングする ---
+    if (window.renderMathInElement) {
+        renderMathInElement(aiComment, {
+            delimiters: [
+                {left: '$', right: '$', display: false},
+                {left: '$$', right: '$$', display: true}
+            ],
+            throwOnError: false
+        });
+    }
+
+    // Firebaseへの保存処理
+    await set(ref(db, `logs/${currentUser}/${Date.now()}`), { ans, isCorrect, lv: currentLv });
 };
 
 async function finishDiagnostic() {
@@ -458,31 +471,29 @@ async function finishDiagnostic() {
 // --- 修正：解説後に次へ行くか終了するか ---
 window.nextQuestion = () => {
     const isCorrect = document.getElementById('feedback-panel').dataset.isCorrect === "true";
+    if (isCorrect) userScore++; // 正解数をカウント
+
     document.getElementById('feedback-panel').classList.remove('show');
 
     if (currentMode === "diagnostic") {
-        if (isCorrect) {
-            userScore = diagnosticQuestions[currentStep].lv;
-            currentStep++;
-            if (currentStep < 15) {
-                loadQuestion();
-            } else {
-                finishDiagnostic();
-            }
-        } else {
-            // 不正解なら解説を閉じたタイミングでやめる
-            finishDiagnostic();
-        }
+        // ...既存の診断テスト処理...
     } else {
         currentStep++;
         if (currentStep < totalQuestions) {
             loadQuestion();
         } else {
-            showMenu();
+            // 全問終了時
+            if (selectedLv === 16) {
+                // 修了テストなら判定関数へ
+                finishExam(userScore);
+            } else {
+                // 普通の演習ならメニューへ
+                alert(`${totalQuestions}問中 ${userScore}問正解でした！`);
+                showMenu();
+            }
         }
     }
 };
-
 // 【修正前】 function showMenu() { ... }
 // 【修正後】 以下の形に書き換え
 
