@@ -507,11 +507,7 @@ window.nextQuestion = () => {
 };
 // 【修正前】 function showMenu() { ... }
 // 【修正後】 以下の形に書き換え
-async function finishDiagnostic() {
-    await set(ref(db, `users/${currentUser}/hasTakenTest`), true);
-    await set(ref(db, `users/${currentUser}/level`), userScore);
-    showMenu();
-}
+
 window.showMenu = () => {
     showSection('menu-section');
     
