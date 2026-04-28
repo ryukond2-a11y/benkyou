@@ -609,12 +609,13 @@ window.nextQuestion = () => {
     document.getElementById('feedback-panel').classList.remove('show');
 
     if (currentMode === "diagnostic") {
-        // --- 診断テストの進行ロジックを追加 ---
         currentStep++;
         if (currentStep < diagnosticQuestions.length) {
             loadQuestion();
         } else {
-        // 演習 or 修了テスト
+            finishDiagnostic(); // 診断終了
+        }
+    } else { // 練習モード
         currentStep++;
         if (currentStep < totalQuestions) {
             loadQuestion();
@@ -627,7 +628,7 @@ window.nextQuestion = () => {
             }
         }
     }
-};
+}; // ここでしっかり閉じる
 // 【修正前】 function showMenu() { ... }
 // 【修正後】 以下の形に書き換え
 
