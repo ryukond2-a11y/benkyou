@@ -66,6 +66,68 @@ function normalize(str) {
         .replace(/\s+/g, "") // 空白消去
         .toLowerCase();      // 小文字化
 }
+window.openDashboard = () => {
+    const dashboard = document.getElementById('guide-dashboard');
+    if (dashboard) {
+        dashboard.style.display = "block";
+        history.pushState({ page: "guide" }, ""); // 戻るボタン対策
+        window.switchTab('j1'); // 最初は中1を表示
+    }
+};
+window.switchTab = (tab) => {
+    const container = document.getElementById('guide-content');
+    if (!container) return;
+
+    // 中1数学 (j1) の解説一覧を生成
+    if (tab === 'j1') {
+        let html = `
+            <div style="padding: 10px;">
+                <h3 style="border-bottom: 2px solid #2196f3; padding-bottom: 5px;">中1数学 解説・公式一覧</h3>
+                <p style="font-size: 0.9em; color: #666;">各レベルのポイントを復習しよう！</p>
+        `;
+
+        levelMaster.forEach(item => {
+            // 修了テスト（Lv.16）は解説不要なのでスキップ
+            if (item.lv === 16) return;
+
+            html += `
+                <div class="explanation-card" style="
+                    background: white; 
+                    border: 1px solid #ddd; 
+                    border-radius: 10px; 
+                    padding: 12px; 
+                    margin-bottom: 15px; 
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                    border-left: 5px solid #2196f3;
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <span style="font-weight: bold; color: #1976d2;">Lv.${item.lv} ${item.unit}</span>
+                        <span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 12px; font-size: 0.8em;">${item.title}</span>
+                    </div>
+                    <div class="hint-text" style="font-size: 0.95em; line-height: 1.5; color: #333;">
+                        ${item.hint}
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+        container.innerHTML = html;
+
+        // 数式 (LaTeX) を反映させる
+        if (window.renderMathInElement) {
+            renderMathInElement(container, {
+                delimiters: [
+                    {left: '$', right: '$', display: false},
+                    {left: '$$', right: '$$', display: true}
+                ],
+                throwOnError: false
+            });
+        }
+    } else {
+        container.innerHTML = "<p style='padding: 20px;'>中2・中3の内容は準備中です。</p>";
+    }
+};
 // レベルメニューを動的に生成する関数
 function renderLevelMenu() {
     const container = document.querySelector('.unit-list-container');
