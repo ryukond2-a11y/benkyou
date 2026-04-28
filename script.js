@@ -134,6 +134,14 @@ function renderLevelMenu() {
     if (!container) return;
     container.innerHTML = "";
 
+    // 解説ボタン（ダッシュボード行き）をメニュー最上部に追加
+    const guideBtn = document.createElement('button');
+    guideBtn.innerHTML = "📖 解説（解き方）一覧を表示";
+    guideBtn.style = "width: 100%; padding: 12px; background: #4a90e2; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 15px; font-size: 16px;";
+    guideBtn.onclick = () => openDashboard();
+    container.appendChild(guideBtn);
+
+    // 各レベルのリストを表示
     levelMaster.forEach(item => {
         const row = document.createElement('div');
         row.style = "display: flex; gap: 8px; margin-bottom: 12px; align-items: stretch;";
@@ -142,14 +150,70 @@ function renderLevelMenu() {
             <div class="unit-card" onclick="startUnit(${item.lv})" style="flex: 1; margin-bottom: 0; display: flex; align-items: center; padding: 10px; cursor: pointer;">
                 Lv.${item.lv} ${item.title}
             </div>
-            <button onclick="window.open('${item.pdf}', '_blank')" 
-                style="width: 70px; background: #607d8b; color: white; border: none; border-radius: 12px; font-size: 12px; cursor: pointer; font-weight: bold; line-height: 1.2; padding: 5px;">
-                解き方<br>PDF
+            <button onclick="openDashboardWithLv(${item.lv})" 
+                style="width: 70px; background: #2196f3; color: white; border: none; border-radius: 12px; font-size: 12px; cursor: pointer; font-weight: bold; line-height: 1.2; padding: 5px;">
+                解き方<br>表示
             </button>
         `;
         container.appendChild(row);
     });
 }
+// ダッシュボードを開く
+window.openDashboard = () => {
+    document.getElementById('guide-dashboard').style.display = "block";
+    renderLevelTiles('j1'); // タイル（Lv.1, Lv.2...）を表示
+};
+
+// ダッシュボードを閉じる
+window.closeDashboard = () => {
+    document.getElementById('guide-dashboard').style.display = "none";
+};
+
+// レベルタイルの生成
+function renderLevelTiles(grade) {
+    const grid = document.getElementById('level-button-grid');
+    grid.innerHTML = "";
+    if(grade !== 'j1') {
+        document.getElementById('guide-display-area').innerHTML = "中2・中3は準備中です。";
+        return;
+    }
+    
+    levelMaster.forEach(item => {
+        if(item.lv === 16) return;
+        const tile = document.createElement('div');
+        tile.className = "level-tile";
+        tile.innerText = `Lv.${item.lv}`;
+        tile.onclick = () => showGuide(item.lv);
+        grid.appendChild(tile);
+    });
+}
+
+// 実際の解説文を表示する
+function showGuide(lv) {
+    const item = levelMaster.find(l => l.lv === lv);
+    const displayArea = document.getElementById('guide-display-area');
+    if (!item) return;
+
+    displayArea.innerHTML = `
+        <div style="background: white; padding: 15px; border-radius: 10px; border-left: 5px solid #4a90e2;">
+            <h3 style="margin: 0 0 10px 0;">Lv.${item.lv} ${item.title}</h3>
+            <div style="font-size: 15px;">${item.hint}</div>
+        </div>
+    `;
+
+    // 数式を変換（KaTeX）
+    if (window.renderMathInElement) {
+        renderMathInElement(displayArea, {
+            delimiters: [{left: '$', right: '$', display: false}],
+            throwOnError: false
+        });
+    }
+}
+// 特定のレベルを指定してダッシュボードを開く関数
+window.openDashboardWithLv = (lv) => {
+    openDashboard(); // ダッシュボードを表示
+    showGuide(lv);   // そのレベルの解説を表示
+};
 // --- セクション切り替えヘルパー ---
 function showSection(sectionId) {
     // ranking-section を追加
