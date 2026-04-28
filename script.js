@@ -614,9 +614,6 @@ window.nextQuestion = () => {
         if (currentStep < diagnosticQuestions.length) {
             loadQuestion();
         } else {
-            finishDiagnostic(); // 15問終わったら終了
-        }
-    } else {
         // 演習 or 修了テスト
         currentStep++;
         if (currentStep < totalQuestions) {
