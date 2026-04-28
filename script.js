@@ -23,21 +23,22 @@ let selectedLv = 1; // 追加：演習レベル保持用
 
 // --- 中1数学 15レベル定義（hintを追加） ---
 const levelMaster = [
-    { lv: 1, unit: "正負の数", title: "正負の数（加減）", hint: "同じ符号なら足してその符号、違うなら引いて絶対値が大きい方の符号！", pdf: "pdfs/lv1.pdf" },
-    { lv: 2, unit: "正負の数", title: "正負の数（乗除）", hint: "マイナスが奇数個なら「−」、偶数個なら「＋」になるよ。", pdf: "pdfs/lv2.pdf" },
-    { lv: 3, unit: "正負の数", title: "累乗・四則混合", hint: "累乗 → カッコ内 → 乗除 → 加減の順で計算！", pdf: "pdfs/lv3.pdf" },
-    { lv: 4, unit: "文字の式", title: "文字式の表し方", hint: "×や÷を省く、数は前、アルファベット順などのルールを確認！", pdf: "pdfs/lv4.pdf" },
-    { lv: 5, unit: "文字の式", title: "式の計算（加減）", hint: "同じ文字がついた項（同類項）どうしをまとめよう！", pdf: "pdfs/lv5.pdf" },
-    { lv: 6, unit: "一次方程式", title: "等式の性質", hint: "両辺に同じ数を足したり引いたりしてもバランスは崩れないよ！", pdf: "pdfs/lv6.pdf" },
-    { lv: 7, unit: "一次方程式", title: "一次方程式の解法", hint: "xがついた項を左辺に、数字を右辺に集めよう！", pdf: "pdfs/lv7.pdf" },
-    { lv: 8, unit: "一次方程式", title: "方程式（移行）", hint: "＝を飛び越えるときは、符号をプラスからマイナス（逆）に変えよう！", pdf: "pdfs/lv8.pdf" },
-    { lv: 9, unit: "一次方程式", title: "方程式（複雑）", hint: "カッコや小数は、まず展開や10倍・100倍をして整数に直そう！", pdf: "pdfs/lv9.pdf" },
-    { lv: 10, unit: "比例・反比例", title: "比例の式", hint: "y = ax。aを求めるには y ÷ x を計算しよう！", pdf: "pdfs/lv10.pdf" },
-    { lv: 11, unit: "比例・反比例", title: "反比例の式", hint: "y = a/x。aを求めるには x × y を計算しよう！", pdf: "pdfs/lv11.pdf" },
-    { lv: 12, unit: "平面図形", title: "おうぎ形の計算", hint: "（弧の長さ）＝（円周 2πr）×（中心角/360）だよ！", pdf: "pdfs/lv12.pdf" },
-    { lv: 13, unit: "空間図形", title: "柱体の体積", hint: "（体積）＝（底面積）×（高さ）で計算しよう！", pdf: "pdfs/lv13.pdf" },
-    { lv: 14, unit: "空間図形", title: "球の計算", hint: "表面積 S = 4πr^2。心配(4π)ある(r^2)と覚えよう！", pdf: "pdfs/lv14.pdf" },
-    { lv: 15, unit: "データの活用", title: "平均・中央値", hint: "合計÷個数が平均、小さい順に並べた真ん中の値が中央値！", pdf: "pdfs/lv15.pdf" }
+    { lv: 1, unit: "正負の数", title: "加減", hint: "同じ符号なら足してその符号、違うなら引いて絶対値が大きい方の符号！<br>例：$(-3) + (-5) = -8$, $(+3) + (-5) = -2$" },
+    { lv: 2, unit: "正負の数", title: "乗除", hint: "マイナスが奇数個なら$-$、偶数個なら$+$になるよ。<br>例：$(-2) \times (-3) = +6$, $(-2) \times (+3) = -6$" },
+    { lv: 3, unit: "正負の数", title: "累乗", hint: "累乗 → カッコ → 乗除 → 加減の順！<br>例：$(-3)^2 = (-3) \times (-3) = 9$<br>$-3^2 = -(3 \times 3) = -9$" },
+    { lv: 4, unit: "文字の式", title: "表し方", hint: "$\times$ や $\div$ を省く、数は前、アルファベット順！<br>例：$a \times b \times 3 = 3ab$, $x \div 5 = \\frac{x}{5}$" },
+    { lv: 5, unit: "文字の式", title: "計算", hint: "同じ文字の項（同類項）どうしをまとめよう！<br>例：$5x + 3y - 2x = 3x + 3y$" },
+    { lv: 6, unit: "一次方程式", title: "性質", hint: "両辺に同じ計算をしても等号 $=$ は成り立つよ！<br>$x - 5 = 10 \rightarrow x - 5 \mathbf{+ 5} = 10 \mathbf{+ 5}$" },
+    { lv: 7, unit: "一次方程式", title: "解法", hint: "$x$ を左に、数字を右に集めて $x = \text{数字}$ の形にしよう。" },
+    { lv: 8, unit: "一次方程式", title: "移行", hint: "$=$ をまたぐ時は符号を逆にする！<br>$x \mathbf{+ 3} = 10 \rightarrow x = 10 \mathbf{- 3}$" },
+    { lv: 9, unit: "一次方程式", title: "複雑", hint: "カッコは分配法則で外し、小数は10倍、分数は最小公倍数をかけて整数に直そう！" },
+    { lv: 10, unit: "比例", title: "式", hint: "$y = ax$。比例定数 $a$ は $y \div x$ で求められるよ。" },
+    { lv: 11, unit: "反比例", title: "式", hint: "$y = \\frac{a}{x}$。比例定数 $a$ は $x \times y$ で求められるよ。" },
+    { lv: 12, unit: "平面図形", title: "おうぎ形", hint: "弧の長さ $L = 2\pi r \times \frac{\text{中心角}}{360}$<br>面積 $S = \pi r^2 \times \frac{\text{中心角}}{360}$" },
+    { lv: 13, unit: "空間図形", title: "体積", hint: "柱体：底面積 $\times$ 高さ<br>錐体：底面積 $\times$ 高さ $\times \frac{1}{3}$" },
+    { lv: 14, unit: "空間図形", title: "球", hint: "表面積 $S = 4\pi r^2$ (心配あるある)<br>体積 $V = \frac{4}{3}\pi r^3$ (身の上に心配参上)" },
+    { lv: 15, unit: "データの活用", title: "平均・中央値", hint: "平均＝合計 $\div$ 個数<br>中央値＝小さい順に並べた真ん中の値" },
+    { lv: 16, unit: "中1修了", title: "修了テスト", hint: "20問中18問正解で合格！", isExam: true }
 ];
 // --- 診断テスト用 15問 ---
 const diagnosticQuestions = [
@@ -97,7 +98,55 @@ window.showAuthForm = (mode) => {
 };
 
 window.backToChoice = () => showSection('auth-choice');
+// 1. アプリ起動時に足跡を残す (ログイン完了後の処理に入れてもOK)
+window.addEventListener('load', () => {
+    history.pushState({ page: "main" }, "");
+});
 
+// 2. ブラウザの「戻る」を監視
+window.onpopstate = function(event) {
+    const dashboard = document.getElementById('guide-dashboard');
+    if (dashboard.style.display === "block") {
+        // ダッシュボードが開いていたら、閉じるだけ（履歴はもう戻っている）
+        dashboard.style.display = "none";
+    } else {
+        // もしメイン画面で戻るを押されたら、警告（またはログイン画面へ）
+        if(confirm("ログイン画面に戻りますか？")) {
+            location.reload(); 
+        } else {
+            history.pushState({ page: "main" }, ""); // 履歴を戻さないように再セット
+        }
+    }
+};
+
+// 3. ダッシュボードを開く
+function openDashboard() {
+    document.getElementById('guide-dashboard').style.display = "block";
+    history.pushState({ page: "guide" }, ""); // 履歴を1つ追加
+    switchTab('j1'); // 最初は中1を表示
+}
+// nextQuestion関数の中で、currentStepが最後まで行った時の判定
+async function finishExam(score) {
+    const passScore = 18; // 20問中18問
+    if (score >= passScore) {
+        alert(`【合格】20問中${score}問正解！\n中1数学を修了しました！殿堂入りです。`);
+        
+        // 殿堂入りフラグをDBに保存
+        const userRef = ref(db, `users/${currentUser}`);
+        await set(ref(db, `users/${currentUser}/isJ1Done`), true); 
+        // 既存のレベルも15に更新しておく
+        await set(ref(db, `users/${currentUser}/level`), 15);
+        
+    } else {
+        alert(`【不合格】正解数: ${score}/20\nあと${passScore - score}問で合格でした。また挑戦しよう！`);
+    }
+    showMenu();
+}
+function closeDashboard() {
+    document.getElementById('guide-dashboard').style.display = "none";
+    // 戻るボタンが押された時と同様の挙動にするため、手動でhistory.back()しても良いが、
+    // ここでは表示を消すだけに留める
+}
 window.processAuth = async () => {
     const user = document.getElementById('username').value.trim();
     const pass = document.getElementById('password').value.trim();
@@ -456,42 +505,33 @@ window.showRanking = async () => {
     const rankingBody = document.getElementById('ranking-body');
     rankingBody.innerHTML = "<tr><td colspan='3'>読み込み中...</td></tr>";
 
-    try {
-        // 全ユーザーのログを取得
-        const logsSnap = await get(ref(db, 'logs'));
-        if (!logsSnap.exists()) {
-            rankingBody.innerHTML = "<tr><td colspan='3'>データがありません</td></tr>";
-            return;
-        }
+    const snap = await get(ref(db, 'users'));
+    const users = snap.val();
+    const rankingData = [];
 
-        const allLogs = logsSnap.val();
-        const rankingData = [];
-
-        // ユーザーごとにログの数を数える
-        for (const username in allLogs) {
-            const solveCount = Object.keys(allLogs[username]).length;
-            rankingData.push({ name: username, count: solveCount });
-        }
-
-        // 挑戦数が多い順に並び替え
-        rankingData.sort((a, b) => b.count - a.count);
-
-        // テーブルに表示
-        rankingBody.innerHTML = "";
-        rankingData.forEach((data, index) => {
-            const row = `
-                <tr style="border-bottom: 1px solid #eee; height: 40px;">
-                    <td>${index + 1}位</td>
-                    <td>${data.name}</td>
-                    <td><b>${data.count}</b> 問</td>
-                </tr>
-            `;
-            rankingBody.innerHTML += row;
+    for (const name in users) {
+        rankingData.push({ 
+            name: name, 
+            level: users[name].level || 0,
+            isJ1Done: users[name].isJ1Done || false // 修了フラグ
         });
-    } catch (e) {
-        console.error(e);
-        rankingBody.innerHTML = "<tr><td colspan='3'>エラーが発生しました</td></tr>";
     }
+
+    // レベル順にソート
+    rankingData.sort((a, b) => b.level - a.level);
+
+    rankingBody.innerHTML = "";
+    rankingData.forEach((data, index) => {
+        const medal = data.isJ1Done ? "🎓" : ""; // 修了者は🎓マーク
+        const row = `
+            <tr style="border-bottom: 1px solid #eee; height: 40px;">
+                <td>${index + 1}位 ${medal}</td>
+                <td>${data.name}</td>
+                <td>Lv.<b>${data.level}</b></td>
+            </tr>
+        `;
+        rankingBody.innerHTML += row;
+    });
 };
 // --- 修正：演習開始ボタン ---
 window.startUnit = (lv) => {
