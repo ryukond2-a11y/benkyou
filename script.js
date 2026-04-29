@@ -64,11 +64,17 @@ const diagnosticQuestions = [
 function normalize(str) {
     if (!str) return "";
     return str.toString()
-        .replace(/[ー—－‐]/g, "-") // 1. まず「あらゆる横棒」を半角ハイフンにする
-        .replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xfee0)) // 2. その他の全角を半角にする
-        .replace(/\s+/g, "")      // 3. 空白を消す
-        .toLowerCase();           // 4. 小文字にする
+        // 1. 先にあらゆる「横棒」記号を半角マイナスに統一する
+        // (長音、全角マイナス、数学記号のマイナス、ダッシュなどを網羅)
+        .replace(/[ー—－‐−]/g, "-") 
+        // 2. その他の数字や記号を全角から半角へ
+        .replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xfee0)) 
+        // 3. 空白を消す
+        .replace(/\s+/g, "")      
+        // 4. 小文字に統一
+        .toLowerCase();           
 }
+
 
 window.openDashboard = () => {
     const dashboard = document.getElementById('guide-dashboard');
