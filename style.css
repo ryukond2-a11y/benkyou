@@ -7,6 +7,9 @@
 }
 
 body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; }
+#q-text {
+    white-space: pre-wrap;
+}
 #app { width: 100%; max-width: 450px; padding: 20px; margin-top: 40px; }
 
 .card { background: var(--white); border-radius: 20px; padding: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
