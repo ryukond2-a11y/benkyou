@@ -64,11 +64,12 @@ const diagnosticQuestions = [
 function normalize(str) {
     if (!str) return "";
     return str.toString()
-        .replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xfee0)) // 全角→半角
-        .replace(/[ー—－‐]/g, "-") // ★のばし棒、ダッシュ、全角マイナスをすべて半角の「-」に変換
-        .replace(/\s+/g, "")      // 空白消去
-        .toLowerCase();           // 小文字化
+        .replace(/[ー—－‐]/g, "-") // 1. まず「あらゆる横棒」を半角ハイフンにする
+        .replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xfee0)) // 2. その他の全角を半角にする
+        .replace(/\s+/g, "")      // 3. 空白を消す
+        .toLowerCase();           // 4. 小文字にする
 }
+
 window.openDashboard = () => {
     const dashboard = document.getElementById('guide-dashboard');
     if (dashboard) {
