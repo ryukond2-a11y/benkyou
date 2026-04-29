@@ -8,7 +8,8 @@
 
 body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; }
 #q-text {
-    white-space: pre-wrap;
+    display: block !important;
+    white-space: pre-wrap !important;
 }
 #app { width: 100%; max-width: 450px; padding: 20px; margin-top: 40px; }
 
