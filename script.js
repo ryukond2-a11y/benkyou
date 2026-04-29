@@ -42,11 +42,11 @@ const levelMaster = [
 ];
 // --- 診断テスト用 15問 ---
 const diagnosticQuestions = [
-    { lv: 1, unit: "正負の数", text: "(-8) + (+5) は？", ans: "-3" },
-    { lv: 2, unit: "正負の数", text: "(-2) × (-7) は？", ans: "14" },
-    { lv: 3, unit: "正負の数", text: "(-3)^2 - 5 は？", ans: "4" },
-    { lv: 4, unit: "文字の式", text: "3x - 5x は？", ans: "-2x" },
-    { lv: 5, unit: "文字の式", text: "x=4のとき、5x-3の値は？", ans: "17" },
+    { lv: 1, unit: "正負の数", text: "(-8) + (+5) は？（半角で記入）", ans: "-3" },
+    { lv: 2, unit: "正負の数", text: "(-2) × (-7) は？（半角で記入）", ans: "14" },
+    { lv: 3, unit: "正負の数", text: "(-3)^2 - 5 は？（半角で記入）", ans: "4" },
+    { lv: 4, unit: "文字の式", text: "3x - 5x は？（半角で記入）", ans: "-2x" },
+    { lv: 5, unit: "文字の式", text: "x=4のとき、5x-3の値は？（半角で記入）", ans: "17" },
     { lv: 6, unit: "一次方程式", text: "x + 7 = 3 の x は？", ans: "-4" },
     { lv: 7, unit: "一次方程式", text: "4x = 12 の x は？", ans: "3" },
     { lv: 8, unit: "一次方程式", text: "2x + 6 = 10 の x は？", ans: "2" },
@@ -429,18 +429,18 @@ function generateAIQuestion(lv) {
    switch(lv) {
         case 1: // 正負の数（加減）
             const a1 = nz(15), b1 = nz(15);
-            text = `(${a1}) + (${b1}) は？`;
+            text = `(${a1}) + (${b1}) は？（半角で記入）`;
             ans = (a1 + b1).toString();
             break;
         case 2: // 正負の数（乗除）
             const a2 = nz(9), b2 = nz(9);
-            text = `(${a2}) × (${b2}) は？`;
+            text = `(${a2}) × (${b2}) は？（半角で記入）`;
             ans = (a2 * b2).toString();
             break;
         case 3: // 累乗・四則混合
     　　const a3 = r(5, 2);
     　　const b3 = r(10); // 引く数を固定する
-           text = `(-${a3})^2 - ${b3} は？`;
+           text = `(-${a3})^2 - ${b3} は？（半角で記入）`;
            ans = (Math.pow(a3, 2) - b3).toString(); // 同じ b3 を使う
            break;
 
@@ -462,7 +462,7 @@ function generateAIQuestion(lv) {
            break;
         case 5: // 式の計算（加減）
             const a5 = r(10, 2), b5 = r(10, 2);
-            text = `${a5}x - ${b5}x は？`;
+            text = `${a5}x - ${b5}x は？（半角で記入）`;
             ans = (a5 - b5) + "x";
             break;
         case 6: // 等式の性質
