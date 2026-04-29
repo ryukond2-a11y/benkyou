@@ -83,8 +83,10 @@ window.openDashboard = () => {
     const dashboard = document.getElementById('guide-dashboard');
     if (dashboard) {
         dashboard.style.display = "block";
-        history.pushState({ page: "guide" }, ""); // 戻るボタン対策
-        window.switchTab('j1'); // 最初は中1を表示
+        history.pushState({ page: "guide" }, ""); 
+        
+        // switchTab('j1') ではなく、タイルを表示する関数を呼ぶ
+        renderLevelTiles('j1'); 
     }
 };
 window.switchTab = (tab) => {
@@ -266,12 +268,6 @@ window.onpopstate = function(event) {
     }
 };
 
-// 3. ダッシュボードを開く
-function openDashboard() {
-    document.getElementById('guide-dashboard').style.display = "block";
-    history.pushState({ page: "guide" }, ""); // 履歴を1つ追加
-    switchTab('j1'); // 最初は中1を表示
-}
 // nextQuestion関数の中で、currentStepが最後まで行った時の判定
 async function finishExam(score) {
     const passScore = 18; // 20問中18問で合格
@@ -560,13 +556,17 @@ window.setCount = (num) => {
 function loadQuestion() {
     const q = (currentMode === "diagnostic") ? diagnosticQuestions[currentStep] : practiceQuestions[currentStep];
     if(!q) return showMenu();
+    
     document.getElementById('q-unit').innerText = q.unit;
-    document.getElementById('q-text').innerHTML = q.text.replace(/\n/g, '<br>');
+    
+    // innerText ではなく innerHTML を使い、\n を <br> に変える
+    const qTextEl = document.getElementById('q-text');
+    qTextEl.innerHTML = q.text.replace(/\n/g, '<br>');
+    
     document.getElementById('current-step').innerText = currentStep + 1;
     document.getElementById('answer-input').value = "";
-    document.getElementById('feedback-panel').classList.remove('show'); // パネル隠す
+    document.getElementById('feedback-panel').classList.remove('show');
 }
-
 window.handleAnswer = async () => {
     const inputField = document.getElementById('answer-input');
     const q = (currentMode === "diagnostic") ? diagnosticQuestions[currentStep] : practiceQuestions[currentStep];
