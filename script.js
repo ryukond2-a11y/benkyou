@@ -561,7 +561,7 @@ function loadQuestion() {
     const q = (currentMode === "diagnostic") ? diagnosticQuestions[currentStep] : practiceQuestions[currentStep];
     if(!q) return showMenu();
     document.getElementById('q-unit').innerText = q.unit;
-    document.getElementById('q-text').innerText = q.text;
+    document.getElementById('q-text').innerHTML = q.text.replace(/\n/g, '<br>');
     document.getElementById('current-step').innerText = currentStep + 1;
     document.getElementById('answer-input').value = "";
     document.getElementById('feedback-panel').classList.remove('show'); // パネル隠す
