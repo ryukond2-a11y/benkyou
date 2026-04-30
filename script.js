@@ -1,128 +1,120 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
 import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
-
 const firebaseConfig = {
     apiKey: "AIzaSyAwdE7AqopqCSFu5fyTO9sj6iYlC_MtecI",
     databaseURL: "https://benkyou-9a95b-default-rtdb.firebaseio.com/",
     projectId: "benkyou-9a95b",
 };
-// レベル別ボタン（個別）を非表示にする
-const lvButton = document.getElementById('level-hint-btn');
-if (lvButton) lvButton.remove();
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-
 // --- 変数の管理 ---
 let authMode = 'login';
 let currentUser = "";
 let currentStep = 0;
 let userScore = 0;
-let currentGrade = "j1";
 let totalQuestions = 15;
 let aiAnswer = "";
 let currentMode = "diagnostic"; 
 let practiceQuestions = [];
 let selectedLv = 1; // 追加：演習レベル保持用
-
 // --- 中1数学 15レベル定義（hintを追加） ---
-const levelMaster = {
-    // 中1（j1）のデータ
-    j1: [
-        { 
-            lv: 1, 
-            unit: "正負の数", 
-            title: "加減", 
-            hint: "<b>【正負のたし算・ひき算】</b><br>同じ符号なら、絶対値を足してその符号をつけます。違う符号なら、絶対値が大きい方から小さい方を引き、絶対値が大きい方の符号をつけます！<br>例：$(-3) + (-5) = -8$<br>例：$(+3) + (-5) = -2$" 
-        },
-        { 
-            lv: 2, 
-            unit: "正負の数", 
-            title: "乗除", 
-            hint: "<b>【正負のかけ算・わり算】</b><br>計算式の中に『$-$』がいくつあるか数えましょう！奇数個なら答えは『$-$』、偶数個なら答えは『$+$』になります。<br>例：$(-2) \times (-3) = +6$" 
-        },
-        { 
-            lv: 3, unit: "正負の数", title: "累乗", 
-            hint: "<b>【累乗と計算順序】</b><br>1.累乗 → 2.カッコ → 3.乗除 → 4.加減 の順！<br>$(-3)^2 = 9$ ですが、$-3^2 = -9$ なので注意！" 
-        },
-        { 
-            lv: 4, unit: "文字の式", title: "表し方", 
-            hint: "<b>【文字式のルール】</b><br>$\\times$ は省く、数字は前、アルファベット順！ $1x$ は $x$ と書きます。" 
-        },
-        { 
-            lv: 5, unit: "文字の式", title: "計算", 
-            hint: "<b>【文字の計算】</b><br>文字が同じ項（同類項）どうしは、係数を計算してまとめられます。$5x + 3y - 2x = 3x + 3y$。" 
-        },
-        { 
-            lv: 6, unit: "一次方程式", title: "性質", 
-            hint: "<b>【等式の性質】</b><br>左辺と右辺に同じ操作をしてもイコールは成立します。天秤をイメージしてね。" 
-        },
-        { 
-            lv: 7, unit: "一次方程式", title: "解法", 
-            hint: "<b>【方程式のゴール】</b><br>$x = \\text{数字}$ の形を目指します。最後に $x$ の前の数字で両辺を割りましょう。" 
-        },
-        { 
-            lv: 8, unit: "一次方程式", title: "移行", 
-            hint: "<b>【移行】</b><br>橋（$=$）を渡るときは符号が逆になります。$+3$ を右に持っていくと $-3$ になります。" 
-        },
-        { 
-            lv: 9, unit: "一次方程式", title: "複雑", 
-            hint: "<b>【複雑な方程式】</b><br>カッコは分配法則で外し、小数は10倍、分数は最小公倍数をかけて整数にしてから解きます。" 
-        },
-        { 
-            lv: 10, unit: "比例", title: "式", 
-            hint: "<b>【比例】</b><br>式は $y = ax$ です。$a$ は比例定数で、$a = \\frac{y}{x}$ で求められます。" 
-        },
-        { 
-            lv: 11, unit: "反比例", title: "式", 
-            hint: "<b>【反比例】</b><br>式は $y = \\frac{a}{x}$ です。$x \\times y = a$ になるのが大きな特徴です。" 
-        },
-        { 
-            lv: 12, unit: "平面図形", title: "おうぎ形", 
-            hint: "<b>【おうぎ形】</b><br>弧の長さ $L = 2\\pi r \\times \\frac{\\text{中心角}}{360}$、面積 $S = \\pi r^2 \\times \\frac{\\text{中心角}}{360}$ です。" 
-        },
-        { 
-            lv: 13, unit: "空間図形", title: "体積", 
-            hint: "<b>【体積】</b><br>柱体は「底面積 $\\times$ 高さ」。錐体（とんがり）は「底面積 $\\times$ 高さ $\\times \\frac{1}{3}$」です。" 
-        },
-        { 
-            lv: 14, unit: "空間図形", title: "球", 
-            hint: "<b>【球の公式】</b><br>表面積 $S = 4\\pi r^2$、体積 $V = \\frac{4}{3}\\pi r^3$ です。しっかり暗記！" 
-        },
-        { 
-            lv: 15, unit: "データの活用", title: "平均・中央値", 
-            hint: "<b>【平均・中央値】</b><br>平均は全部の合計を個数で割る。中央値は小さい順に並べた真ん中の値です。" 
-        },
-        { 
-            lv: 16, unit: "中1修了", title: "修了テスト", 
-            hint: "全範囲の総仕上げ！18点以上で合格です。", 
-            isExam: true 
-        }
-    ],
-
-    // 中2（j2）のデータ
-    j2: [
-        { lv: 1, unit: "式の計算", title: "単項式・多項式", hint: "同類項をまとめます。$3a + 5b - a = 2a + 5b$" },
-        { lv: 2, unit: "式の計算", title: "乗法・除法", hint: "$2a \times 3ab = 6a^2b$ のように、文字の指数に注意！" },
-        { lv: 3, unit: "式の計算", title: "文字式の利用", hint: "「$x$ について解く」とは $x = \dots$ の形に変形することです。" },
-        { lv: 4, unit: "連立方程式", title: "加減法", hint: "上下の式を足したり引いたりして文字を1つ消します。" },
-        { lv: 5, unit: "連立方程式", title: "代入法", hint: "$y=2x$ などを別の式の $y$ に入れ替える方法です。" },
-        { lv: 6, unit: "連立方程式", title: "複雑な計算", hint: "小数や分数は先に整数に直してから連立方程式を解きます。" },
-        { lv: 7, unit: "一次関数", title: "変化の割合", hint: "変化の割合 = $\\frac{yの増加量}{xの増加量} = a$ です。" },
-        { lv: 8, unit: "一次関数", title: "グラフ", hint: "$y = ax + b$。$a$ が傾き、$b$ が切片（$y$軸との交点）です。" },
-        { lv: 9, unit: "一次関数", title: "式の決定", hint: "傾きと1点、または2点の座標から $y = ax + b$ を作ります。" },
-        { lv: 10, unit: "平行と合同", title: "平行線と角", hint: "平行線なら錯角と同位角は等しい！Zの形を探そう。" },
-        { lv: 11, unit: "平行と合同", title: "三角形の角", hint: "三角形の内角の和は $180^{\circ}$、外角は隣り合わない内角の和。" },
-        { lv: 12, unit: "平行と合同", title: "合同条件", hint: "3組の辺、2組の辺と間、1組の辺と両端。どれか1つ！" },
-        { lv: 13, unit: "図形の性質", title: "特別な三角形", hint: "二等辺三角形の底角は等しい。正三角形は全部 $60^{\circ}$。" },
-        { lv: 14, unit: "図形の性質", title: "平行四辺形", hint: "向かい合う辺・角が等しい、対角線が中点で交わる。" },
-        { lv: 15, unit: "確率", title: "確率の基礎", hint: "確率 = $\\frac{\\text{そのことが起こる数}}{\\text{全部の数}}$。樹形図を書こう！" },
-        { lv: 16, unit: "中2修了", title: "修了テスト", hint: "中2の仕上げテスト！全力を出そう！", isExam: true }
-    ]
-};
-
+const levelMaster = [
+    { 
+        lv: 1, 
+        unit: "正負の数", 
+        title: "加減", 
+        hint: "<b>【正負のたし算・ひき算】</b><br>同じ符号なら、絶対値を足してその符号をつけます。違う符号なら、絶対値が大きい方から小さい方を引き、絶対値が大きい方の符号をつけます！<br>例：$(-3) + (-5) = -8$<br>例：$(+3) + (-5) = -2$<br>（借金3円と借金5円で合計借金8円、と考えるとイメージしやすいよ！）" 
+    },
+    { 
+        lv: 2, 
+        unit: "正負の数", 
+        title: "乗除", 
+        hint: "<b>【正負のかけ算・わり算】</b><br>計算式の中に『$-$』がいくつあるか数えましょう！奇数個（1個、3個…）なら答えは必ず『$-$』、偶数個（0個、2個…）なら答えは必ず『$+$』になります。<br>例：$(-2) \\times (-3) = +6$<br>例：$(-2) \\times (+3) = -6$<br>符号さえ決めてしまえば、あとは普通の計算と同じだよ。" 
+    },
+    { 
+        lv: 3, unit: "正負の数", title: "累乗", 
+        hint: "<b>【累乗と計算順序】</b><br>1.累乗 → 2.カッコ → 3.乗除 → 4.加減 の順！<br>特にカッコの有無に注意しましょう。<br>$(-3)^2 = (-3) \\times (-3) = 9$<br>$-3^2 = -(3 \\times 3) = -9$<br>どこが2乗されているか見極めるのがコツです。" 
+    },
+    { 
+        lv: 4, unit: "文字の式", title: "表し方", 
+        hint: "<b>【文字式のルール】</b><br>① $\\times$ や $\\div$ は省く！ ②数字は前！ ③アルファベット順！<br>例：$a \\times b \\times 3 = 3ab$, $x \\div 5 = \\frac{x}{5}$<br>※$1x$ の「1」は書かずに $x$ と書くルールも忘れずに。" 
+    },
+    { 
+        lv: 5, 
+        unit: "文字の式", 
+        title: "計算", 
+        hint: "<b>【文字の計算（同類項）】</b><br>文字の部分が全く同じ項（同類項）どうしは、係数をたしひきして、1つにまとめることができます。<br>例：$5x + 3y - 2x = (5-2)x + 3y = 3x + 3y$<br>文字が違うもの（$x$ と $y$ など）はそれ以上計算できないので注意してね！" 
+    },
+    { 
+        lv: 6, 
+        unit: "一次方程式", 
+        title: "性質", 
+        hint: "<b>【等式の性質】</b><br>天秤（てんびん）をイメージしよう！左辺と右辺に『同じ数字』を『足す・引く・かける・割る』をしても、イコール（$=$）の関係は崩れません。<br>$x - 5 = 10$<br>この場合、両辺に $5$ を足すと…<br>$x - 5 \\mathbf{+ 5} = 10 \\mathbf{+ 5}$ となり、 $x = 15$ が導き出せるよ！" 
+    },
+    { 
+        lv: 7, 
+        unit: "一次方程式", 
+        title: "解法", 
+        hint: "<b>【方程式のゴール】</b><br>方程式を解くとは、$x = \\text{数字}$ という形にすることです。最終的に $x$ にくっついている数字で両辺を割って、きれいな $x$ だけの形を目指しましょう。<br>例：$2x = 10$ なら両辺を $2$ で割って $x = 5$。<br>例：$\\frac{1}{3}x = 4$ なら両辺に $3$ をかけて $x = 12$。" 
+    },
+    { 
+        lv: 8, 
+        unit: "一次方程式", 
+        title: "移行", 
+        hint: "<b>【移行（いこう）の術】</b><br>項を『$=$』の反対側に移動させるときは、符号を必ず逆にします！<br>$x \\mathbf{+ 3} = 10 \\rightarrow x = 10 \\mathbf{- 3}$<br>プラスはマイナスに、マイナスはプラスに。橋を渡るときに変装するイメージで覚えよう！" 
+    },
+    { 
+        lv: 9, 
+        unit: "一次方程式", 
+        title: "複雑", 
+        hint: "<b>【複雑な方程式の攻略】</b><br>①カッコがあれば『分配法則』で外す！<br>②小数は $10$倍や $100$倍して整数にする！<br>③分数は『分母の最小公倍数』をすべての項にかけて消す！<br>いきなり解こうとせず、まずは『普通の式』に整えるのが正解への近道だよ。" 
+    },
+    { 
+        lv: 10, 
+        unit: "比例", 
+        title: "式", 
+        hint: "<b>【比例の基本】</b><br>一方が2倍, 3倍になると、もう一方も2倍, 3倍になる関係です。式は $y = ax$ と表されます。<br>比例定数 $a$ を求めたいときは、$a = y \\div x$（または $a = \\frac{y}{x}$）に代入すれば一発で求められるよ！" 
+    },
+    { 
+        lv: 11, 
+        unit: "反比例", 
+        title: "式", 
+        hint: "<b>【反比例の基本】</b><br>一方が2倍, 3倍になると、もう一方は $\\frac{1}{2}$倍, $\\frac{1}{3}$倍になる関係です。式は $y = \\frac{a}{x}$ と表されます。<br>反比例のヒミツ：実は $x \\times y = a$ になるので、$x$ と $y$ をかければすぐに比例定数 $a$ が見つかるよ！" 
+    },
+    { 
+        lv: 12, 
+        unit: "平面図形", 
+        title: "おうぎ形", 
+        hint: "<b>【おうぎ形の公式】</b><br>円の一部だと考えよう！<br>弧の長さ $L = 2\\pi r \\times \\frac{\\text{中心角}}{360}$<br>面積 $S = \\pi r^2 \\times \\frac{\\text{中心角}}{360}$<br>どちらも最後に『円全体の何分の一か』をかけるだけ！" 
+    },
+    { 
+        lv: 13, 
+        unit: "空間図形", 
+        title: "体積", 
+        hint: "<b>【柱と錐の体積】</b><br>●柱体（柱の形）：底面積 $\\times$ 高さ<br>●錐体（とんがった形）：底面積 $\\times$ 高さ $\\times \\mathbf{\\frac{1}{3}}$<br>とんがっている形は、柱の体積のちょうど $3$分の$1$ になるという不思議なルールがあるよ！" 
+    },
+    { 
+        lv: 14, 
+        unit: "空間図形", 
+        title: "球", 
+        hint: "<b>【球の公式・暗記のコツ】</b><br>●表面積 $S = 4\\pi r^2$<br>（語呂合わせ：心配あるある）<br>●体積 $V = \\frac{4}{3}\\pi r^3$<br>（語呂合わせ：身の上に心配参上）<br>面積は $2$乗、体積は $3$乗になることもセットで覚えよう！" 
+    },
+    { 
+        lv: 15, 
+        unit: "データの活用", 
+        title: "平均・中央値", 
+        hint: "<b>【代表値の違い】</b><br>●平均値：全部足して、個数で割ったもの。<br>●中央値（メジアン）：データを小さい順に並べた時、ちょうど真ん中にくる値。<br>データが偶数個のときは、真ん中の2つの平均をとるのがルールだよ。" 
+    },
+    { 
+        lv: 16, 
+        unit: "中1修了", 
+        title: "修了テスト", 
+        hint: "これが最終試練！中1数学の全範囲からランダムに出題されます。20問中18問正解で合格。今までのレベルで学んだヒントを思い出して、落ち着いて解いていこう！", 
+        isExam: true 
+    }
+];
 // --- 診断テスト用 15問 ---
-const diagnosticQuestions = {
-    j1: [
+const diagnosticQuestions = [
     { lv: 1, unit: "正負の数", text: "(-8) + (+5) は？\n（半角で記入）", ans: "-3" },
     { lv: 2, unit: "正負の数", text: "(-2) × (-7) は？\n（半角で記入）", ans: "14" },
     { lv: 3, unit: "正負の数", text: "(-3)^2 - 5 は？\n（半角で記入）", ans: "4" },
@@ -138,39 +130,7 @@ const diagnosticQuestions = {
     { lv: 13, unit: "空間図形", text: "底面積10, 高さ6 de 三角柱の体積は？", ans: "60" },
     { lv: 14, unit: "空間図形", text: "半径3cmの球の表面積は？(πを用いて回答)", ans: "36π" },
     { lv: 15, unit: "データの活用", text: "3, 7, 11, 19の4つのデータの平均値は？", ans: "10" }
-    ],
-    
-
-    j2: [
-        { lv: 1, unit: "式の計算", text: "5a - 3b - 2a + b を計算せよ", ans: "3a-2b" },
-        { lv: 2, unit: "式の計算", text: "(-4a) × 2b は？", ans: "-8ab" },
-        { lv: 3, unit: "文字式の利用", text: "S = ab を b について解け", ans: "b=S/a" },
-        { lv: 4, unit: "連立方程式", text: "x+y=5, x-y=1 のとき x は？", ans: "3" },
-        { lv: 5, unit: "連立方程式", text: "y=2x と x+y=9 のとき x は？", ans: "3" },
-        { lv: 6, unit: "連立方程式", text: "0.1x + 0.2y = 0.5 を整数に直すと？", ans: "x+2y=5" },
-        { lv: 7, unit: "一次関数", text: "y = -2x + 3 の変化の割合は？", ans: "-2" },
-        { lv: 8, unit: "一次関数", text: "y = 4x - 1 の切片(b)の値は？", ans: "-1" },
-        { lv: 9, unit: "一次関数", text: "傾きが2で点(0, 3)を通る直線の式は？", ans: "y=2x+3" },
-        { lv: 10, unit: "平行と合同", text: "三角形の内角の和は何度？", ans: "180" },
-        { lv: 11, unit: "平行と合同", text: "正n角形の外角の和は常に何度？", ans: "360" },
-        { lv: 12, unit: "平行と合同", text: "2組の辺とその間の（　）が等しい", ans: "角" },
-        { lv: 13, unit: "図形の性質", text: "二等辺三角形の底角は等しい。◯か×か", ans: "◯" },
-        { lv: 14, unit: "図形の性質", text: "平行四辺形の対角線はそれぞれの中点で（　）", ans: "交わる" },
-        { lv: 15, unit: "確率", text: "コインを1回投げて表が出る確率は？", ans: "1/2" }
-    ]
-};
-function startFinalTest() {
-    currentMode = "final";
-    userScore = 0;
-    currentStep = 0;
-    
-    // 全問題からランダムに20問抽出
-    practiceQuestions = allQuestions[currentGrade]
-        .sort(() => 0.5 - Math.random())
-        .slice(0, 20); 
-
-    loadQuestion(0);
-}
+];
 // 回答の全角・半角や空白を整える関数
 // 回答の全角・半角や空白、似た記号を整える関数
 // 回答の全角・半角や空白、似た記号を整える関数
@@ -189,267 +149,62 @@ function normalize(str) {
         // 5. 英字を小文字に統一
         .toLowerCase();           
 }
-// 「次へ」ボタンを押した時の処理を定義
-window.nextQuestion = () => {
-    currentStep++;
-    // モードに応じて問題リストを選択
-    const qList = (currentMode === "diagnostic") ? diagnosticQuestions[currentGrade] : practiceQuestions;
-
-    if (currentStep < qList.length) {
-        // 次の問題へ
-        document.getElementById('current-step').innerText = currentStep + 1;
-        loadQuestion(currentStep);
-        document.getElementById('feedback-panel').classList.remove('show');
-    } else {
-        // 全問終了時
-        document.getElementById('feedback-panel').classList.remove('show');
-        document.getElementById('test-section').classList.add('hidden');
-        document.getElementById('menu-section').classList.remove('hidden');
-
-        if (currentMode === "final") {
-            // あなたが持っている既存の finishExam をそのまま実行
-            finishExam(userScore); 
-        } else {
-            alert(`終了！ ${qList.length}問中 ${userScore}問正解！`);
-            showMenu(); 
-        }
-    }
-};
-window.startUnit = (lv) => {
-    currentMode = "practice";
-    currentStep = 0;
-    
-    // そのレベルの問題をAI生成（または抽出）してセット
-    practiceQuestions = generateAIQuestion(lv); 
-    
-    // 画面を切り替えて最初の問題を表示
-    showSection('quiz-section');
-    showQuestion();
-};
-// 学年切り替え：見た目の変更とデータの更新
-window.switchGrade = (grade) => {
-    currentGrade = grade; // "j1", "j2", "j3"
-    
-    // HTMLにあるすべての学年ボタン（クラス名で取得するのが確実）
-    const allGradeButtons = document.querySelectorAll('.tab-btn, [id^="tab-j"]');
-    
-    allGradeButtons.forEach(btn => {
-        // ボタンのテキストやIDから判定
-        if (btn.id.includes(grade) || btn.innerText.includes(grade.replace('j', ''))) {
-            btn.style.background = "#4a90e2";
-            btn.style.color = "white";
-        } else {
-            btn.style.background = "#eee";
-            btn.style.color = "#666";
-        }
-    });
-
-    const titles = { "j1": "中1数学", "j2": "中2数学", "j3": "中3数学" };
-    const titleElem = document.getElementById('menu-title');
-    if (titleElem) titleElem.innerText = `${titles[grade]}ロードマップ`;
-
-    if (typeof switchTab === 'function') switchTab(grade);
-    if (typeof renderLevelMenu === 'function') renderLevelMenu();
-};
-window.showSection = (id) => {
-    const sections = ['auth-choice', 'auth-form', 'settings-section', 'test-section', 'menu-section', 'ranking-section'];
-    
-    sections.forEach(s => {
-        const el = document.getElementById(s);
-        if (el) {
-            el.classList.add('hidden'); // 一旦全部隠す
-            el.style.display = 'none';   // 念のためdisplayも制御
-        }
-    });
-
-    const target = document.getElementById(id);
-    if (target) {
-        target.classList.remove('hidden');
-        target.style.display = 'block';
-    } else {
-        console.error(`ID: ${id} が見つかりません。HTMLのIDを確認してください。`);
-    }
-};
-// 問題開始：設定画面を表示してからクイズへ
-window.startUnit = (lv) => {
-    window.selectedLv = lv; // 選んだレベルを一時保存
-    showSection('settings-section'); // まず「何問解くか」の画面を出す
-};
-window.showRanking = async () => {
-
-    showSection('ranking-section');
-
-    const rankingBody = document.getElementById('ranking-body');
-
-    rankingBody.innerHTML = "<tr><td colspan='3'>読み込み中...</td></tr>";
-
-
-
-    const usersSnap = await get(ref(db, 'users'));
-
-    const logsSnap = await get(ref(db, 'logs'));
-
-    const users = usersSnap.val() || {};
-
-    const allLogs = logsSnap.val() || {};
-
-    
-
-    const rankingData = [];
-
-
-
-    for (const name in users) {
-
-        // logs[ユーザー名] の中にあるデータの数が「挑戦数」
-
-        let challengeCount = 0;
-
-        if (allLogs[name]) {
-
-            challengeCount = Object.keys(allLogs[name]).length;
-
-        }
-
-
-
-        rankingData.push({ 
-
-            name: name, 
-
-            challengeCount: challengeCount, // これを表示に使う
-
-            isJ1Done: users[name].isJ1Done || false 
-
-        });
-
-    }
-
-
-
-    // 挑戦数が多い順に並び替え
-
-    rankingData.sort((a, b) => b.challengeCount - a.challengeCount);
-
-
-
-    rankingBody.innerHTML = "";
-
-    rankingData.forEach((data, index) => {
-
-        const medal = data.isJ1Done ? "🎓" : "";
-
-        const row = `
-
-            <tr style="border-bottom: 1px solid #eee; height: 40px;">
-
-                <td>${index + 1}位 ${medal}</td>
-
-                <td>${data.name}</td>
-
-                <td><b>${data.challengeCount}</b> 回</td>
-
-            </tr>
-
-        `;
-
-        rankingBody.innerHTML += row;
-
-    });
-
-};
-window.setCount = (num) => {
-    totalStep = num;
-    currentStep = 0;
-    document.getElementById('total-step-display').innerText = totalStep;
-    
-    // 問題を生成
-    practiceQuestions = generateAIQuestion(window.selectedLv);
-    
-    // クイズ画面を表示
-    showSection('test-section'); // HTMLのID 'test-section' に合わせる
-    showQuestion();
-};
-
-// --- メニュー画面を表示する関数 ---
-window.showMenu = () => {
-    // 診断モードを終了し、メニューセクションを表示
-    currentMode = "practice"; 
-    showSection('menu-section');
-    
-    // メニュー内のレベル一覧を再描画（現在の学年に合わせる）
-    renderLevelMenu();
-};
 window.openDashboard = () => {
-    const dash = document.getElementById('guide-dashboard');
-    if (dash) {
-        dash.style.display = 'block';
-        // 今の学年（currentGrade）に基づいてボタンを生成
-        switchTab(currentGrade); 
+    const dashboard = document.getElementById('guide-dashboard');
+    if (dashboard) {
+        dashboard.style.display = "block";
+        history.pushState({ page: "guide" }, ""); 
+        // switchTab('j1') ではなく、タイルを表示する関数を呼ぶ
+        renderLevelTiles('j1'); 
     }
 };
 window.switchTab = (tab) => {
-    // 【追加】タブボタンの見た目（アクティブ状態）を切り替える
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.id === `tab-${tab}`);
-    });
-
-    const container = document.getElementById('guide-display-area'); // HTMLのIDに合わせて修正
+    const container = document.getElementById('guide-content');
     if (!container) return;
-
-    // 学年名を表示用に変換
-    const gradeNames = { "j1": "中1", "j2": "中2", "j3": "中3" };
-    const gradeName = gradeNames[tab] || tab;
-
-    // データがあるかチェック
-    if (!levelMaster[tab]) {
-        container.innerHTML = `<p style='padding: 20px;'>${gradeName}の内容は準備中です。</p>`;
-        return;
-    }
-
-    let html = `
-        <div style="padding: 10px;">
-            <h3 style="border-bottom: 2px solid #2196f3; padding-bottom: 5px;">${gradeName}数学 解説・公式一覧</h3>
-            <p style="font-size: 0.9em; color: #666;">各レベルのポイントを復習しよう！</p>
-    `;
-
-    // levelMaster[tab] をループで回す
-    levelMaster[tab].forEach(item => {
-        if (item.lv === 16) return; // 修了テストはスキップ
-
-        html += `
-            <div class="explanation-card" style="
-                background: white; 
-                border: 1px solid #ddd; 
-                border-radius: 10px; 
-                padding: 12px; 
-                margin-bottom: 15px; 
-                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-                border-left: 5px solid #2196f3;
-            ">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <span style="font-weight: bold; color: #1976d2;">Lv.${item.lv} ${item.unit || ""}</span>
-                    <span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 12px; font-size: 0.8em;">${item.title}</span>
-                </div>
-                <div class="hint-text" style="font-size: 0.95em; line-height: 1.5; color: #333;">
-                    ${item.hint}
-                </div>
-            </div>
+    // 中1数学 (j1) の解説一覧を生成
+    if (tab === 'j1') {
+        let html = `
+            <div style="padding: 10px;">
+                <h3 style="border-bottom: 2px solid #2196f3; padding-bottom: 5px;">中1数学 解説・公式一覧</h3>
+                <p style="font-size: 0.9em; color: #666;">各レベルのポイントを復習しよう！</p>
         `;
-    });
-
-    html += `</div>`;
-    container.innerHTML = html;
-
-    // 数式反映（KaTeX）
-    if (window.renderMathInElement) {
-        renderMathInElement(container, {
-            delimiters: [
-                {left: '$', right: '$', display: false},
-                {left: '$$', right: '$$', display: true}
-            ],
-            throwOnError: false
+        levelMaster.forEach(item => {
+            // 修了テスト（Lv.16）は解説不要なのでスキップ
+            if (item.lv === 16) return;
+            html += `
+                <div class="explanation-card" style="
+                    background: white; 
+                    border: 1px solid #ddd; 
+                    border-radius: 10px; 
+                    padding: 12px; 
+                    margin-bottom: 15px; 
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                    border-left: 5px solid #2196f3;
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <span style="font-weight: bold; color: #1976d2;">Lv.${item.lv} ${item.unit}</span>
+                        <span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 12px; font-size: 0.8em;">${item.title}</span>
+                    </div>
+                    <div class="hint-text" style="font-size: 0.95em; line-height: 1.5; color: #333;">
+                        ${item.hint}
+                    </div>
+                </div>
+            `;
         });
+        html += `</div>`;
+        container.innerHTML = html;
+        // 数式 (LaTeX) を反映させる
+        if (window.renderMathInElement) {
+            renderMathInElement(container, {
+                delimiters: [
+                    {left: '$', right: '$', display: false},
+                    {left: '$$', right: '$$', display: true}
+                ],
+                throwOnError: false
+            });
+        }
+    } else {
+        container.innerHTML = "<p style='padding: 20px;'>中2・中3の内容は準備中です。</p>";
     }
 };
 // レベルメニューを動的に生成する関数
@@ -457,21 +212,16 @@ function renderLevelMenu() {
     const container = document.querySelector('.unit-list-container');
     if (!container) return;
     container.innerHTML = "";
-
-    // 解説ボタン
+    // 解説ボタン（ダッシュボード行き）をメニュー最上部に追加
     const guideBtn = document.createElement('button');
     guideBtn.innerHTML = "📖 解説（解き方）一覧を表示";
     guideBtn.style = "width: 100%; padding: 12px; background: #4a90e2; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 15px; font-size: 16px;";
     guideBtn.onclick = () => openDashboard();
     container.appendChild(guideBtn);
-
-    // 【重要】現在の学年（currentGrade）のリストを取得してループ回す
-    const currentLevels = levelMaster[currentGrade] || [];
-    
-    currentLevels.forEach(item => {
+    // 各レベルのリストを表示
+    levelMaster.forEach(item => {
         const row = document.createElement('div');
         row.style = "display: flex; gap: 8px; margin-bottom: 12px; align-items: stretch;";
-        
         row.innerHTML = `
             <div class="unit-card" onclick="startUnit(${item.lv})" style="flex: 1; margin-bottom: 0; display: flex; align-items: center; padding: 10px; cursor: pointer;">
                 Lv.${item.lv} ${item.title}
@@ -489,48 +239,38 @@ window.openDashboard = () => {
     document.getElementById('guide-dashboard').style.display = "block";
     renderLevelTiles('j1'); // タイル（Lv.1, Lv.2...）を表示
 };
-
 // ダッシュボードを閉じる
 window.closeDashboard = () => {
     document.getElementById('guide-dashboard').style.display = "none";
 };
-
 // レベルタイルの生成
 function renderLevelTiles(grade) {
     const grid = document.getElementById('level-button-grid');
     grid.innerHTML = "";
-
-    // 【修正】levelMaster[grade] を見に行くようにする
-    if(!levelMaster[grade]) {
-        document.getElementById('guide-display-area').innerHTML = "準備中です。";
+    if(grade !== 'j1') {
+        document.getElementById('guide-display-area').innerHTML = "中2・中3は準備中です。";
         return;
     }
-    
-    levelMaster[grade].forEach(item => {
+    levelMaster.forEach(item => {
         if(item.lv === 16) return;
         const tile = document.createElement('div');
         tile.className = "level-tile";
         tile.innerText = `Lv.${item.lv}`;
-        // 【修正】クリックした時に今の学年の解説を出す
-        tile.onclick = () => showGuide(item.lv, grade); 
+        tile.onclick = () => showGuide(item.lv);
         grid.appendChild(tile);
     });
 }
-
 // 実際の解説文を表示する
-function showGuide(lv, grade = currentGrade) {
-    // 【修正】指定された学年のデータから探す
-    const item = levelMaster[grade].find(l => l.lv === lv);
+function showGuide(lv) {
+    const item = levelMaster.find(l => l.lv === lv);
     const displayArea = document.getElementById('guide-display-area');
     if (!item) return;
-
     displayArea.innerHTML = `
         <div style="background: white; padding: 15px; border-radius: 10px; border-left: 5px solid #4a90e2;">
             <h3 style="margin: 0 0 10px 0;">Lv.${item.lv} ${item.title}</h3>
             <div style="font-size: 15px;">${item.hint}</div>
         </div>
     `;
-
     // 数式を変換（KaTeX）
     if (window.renderMathInElement) {
         renderMathInElement(displayArea, {
@@ -554,19 +294,16 @@ function showSection(sectionId) {
     });
     document.getElementById(sectionId).classList.remove('hidden');
 }
-
 window.showAuthForm = (mode) => {
     authMode = mode;
     showSection('auth-form');
     document.getElementById('form-title').innerText = mode === 'login' ? 'ログイン' : '新規登録';
 };
-
 window.backToChoice = () => showSection('auth-choice');
 // 1. アプリ起動時に足跡を残す (ログイン完了後の処理に入れてもOK)
 window.addEventListener('load', () => {
     history.pushState({ page: "main" }, "");
 });
-
 // 2. ブラウザの「戻る」を監視
 window.onpopstate = function(event) {
     const dashboard = document.getElementById('guide-dashboard');
@@ -582,13 +319,11 @@ window.onpopstate = function(event) {
         }
     }
 };
-
 // nextQuestion関数の中で、currentStepが最後まで行った時の判定
 async function finishExam(score) {
     const passScore = 18; // 20問中18問で合格
     if (score >= passScore) {
         alert(`【合格！】20問中${score}問正解！\nおめでとう！君は中1数学マスターだ！🎓`);
-        
         // Firebaseに合格記録を保存
         await set(ref(db, `users/${currentUser}/isJ1Done`), true);
         await set(ref(db, `users/${currentUser}/level`), 16); // レベルを16(修了)に
@@ -606,10 +341,8 @@ window.processAuth = async () => {
     const user = document.getElementById('username').value.trim();
     const pass = document.getElementById('password').value.trim();
     if(!user || !pass) return alert("入力してください");
-
     const userRef = ref(db, 'users/' + user);
     const snap = await get(userRef);
-
     if (authMode === 'login') {
         if (snap.exists() && snap.val().password === pass) {
             currentUser = user;
@@ -636,59 +369,46 @@ async function updateMyStreak(userName) {
     // ※ログイン時に使ったパスワード(0407など)がlogsのキーになっている前提です
     const password = "0407"; // ここは実際にはログイン中のユーザーのパスワード変数を入れてください
     const logRef = firebase.database().ref('logs/' + password);
-    
     const snapshot = await logRef.once('value');
     const logsObj = snapshot.val() || {};
     const logTimestamps = Object.keys(logsObj);
-
     // 2. 今回の正解ログも追加（現在時刻）
     const nowTs = Date.now();
     logTimestamps.push(nowTs);
-    
     // 3. 連続日数を計算（前の回答の calculateStreakFromLogs を使います）
     const newStreak = calculateStreakFromLogs(logTimestamps);
-
     // 4. 反映（パスワードをキーに logs を更新し、名前をキーに users 側を更新）
     const updates = {};
     // logs 側を更新
     updates['logs/' + password + '/' + nowTs] = true;
-    
     // users 側（名前がキーになっている場所）を更新
     // userName には "根田" や "その" が入るようにしてください
     updates['users/' + userName + '/streak'] = newStreak;
     updates['users/' + userName + '/lastUpdate'] = nowTs;
-
     return firebase.database().ref().update(updates);
 }
 // 過去のタイムスタンプ（文字列の配列を想定）から連続日数を計算する関数
 // logsにあるミリ秒のリストから連続日数を計算する
 function calculateStreakFromLogs(logTimestamps) {
     if (!logTimestamps || logTimestamps.length === 0) return 0;
-
     // ミリ秒を「yyyy-mm-dd」形式の文字列に変換して、重複を除去
     const dateStrings = logTimestamps.map(ts => {
         const d = new Date(Number(ts));
         return d.getFullYear() + '-' + (d.getMonth() + 1).toString().padStart(2, '0') + '-' + d.getDate().toString().padStart(2, '0');
     });
-
     // 新しい順（降順）に並べ替え
     const uniqueDates = [...new Set(dateStrings)].sort().reverse();
-
     const now = new Date();
     const today = now.getFullYear() + '-' + (now.getMonth() + 1).toString().padStart(2, '0') + '-' + now.getDate().toString().padStart(2, '0');
-    
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.getFullYear() + '-' + (yesterday.getMonth() + 1).toString().padStart(2, '0') + '-' + yesterday.getDate().toString().padStart(2, '0');
-
     // 最新のログが今日でも昨日でもなければストリーク終了
     if (uniqueDates[0] !== today && uniqueDates[0] !== yesterdayStr) {
         return 1; // 今回解いた分だけ
     }
-
     let streak = 0;
     let checkDate = new Date(uniqueDates[0]);
-
     for (let i = 0; i < uniqueDates.length; i++) {
         const dStr = checkDate.getFullYear() + '-' + (checkDate.getMonth() + 1).toString().padStart(2, '0') + '-' + checkDate.getDate().toString().padStart(2, '0');
         if (uniqueDates[i] === dStr) {
@@ -706,38 +426,31 @@ async function handleCorrectAnswerUpdate(userId) {
     const doc = await userRef.get();
     const now = new Date();
     const todayStr = now.toLocaleDateString('sv-SE');
-
     if (doc.exists) {
         const data = doc.data();
         let history = data.solveHistory || []; // タイムスタンプの配列
-
         // 1. 今回のタイムスタンプを追加
         if (!history.includes(todayStr)) {
             history.push(todayStr);
         }
-
         // 2. 履歴全体から最新の連続日数を計算
         const newStreak = calculateStreak(history);
-
         // 3. DBを更新
         await userRef.update({
             solveHistory: history,
             streak: newStreak,
             lastUpdate: todayStr
         });
-
         console.log(`データ反映完了！現在の記録: ${newStreak}日連続`);
     }
 }
 // --- AI問題生成ロジック（修正：レベル名反映） ---
 function generateAIQuestion(lv) {
-    const config = levelMaster[currentGrade].find(l => l.lv === lv); // 引数の lv を使う
-    
+    const config = levelMaster.find(l => l.lv === lv) || levelMaster[0];
     let text = "";
     let ans = "";
     const r = (max, min = 1) => Math.floor(Math.random() * (max - min + 1)) + min;
     const nz = (max, min = 1) => Math.random() > 0.5 ? r(max, min) : -r(max, min);
-
    switch(lv) {
         case 1: // 正負の数（加減）
             const a1 = nz(15), b1 = nz(15);
@@ -750,16 +463,14 @@ function generateAIQuestion(lv) {
             ans = (a2 * b2).toString();
             break;
         case 3: // 累乗・四則混合
-    　　const a3 = r(5, 2);
-    　　const b3 = r(10); // 引く数を固定する
+        const a3 = r(5, 2);
+        const b3 = r(10); // 引く数を固定する
            text = `(-${a3})^2 - ${b3} は？（半角で記入）`;
            ans = (Math.pow(a3, 2) - b3).toString(); // 同じ b3 を使う
            break;
-
         case 4: // 文字式の加減
            const a4 = r(10);
            const b4 = r(10);text = `${a4}x - ${b4}x は？`;
-    
     // 計算結果が0なら "0"、それ以外なら "数字x" に
            const result = a4 - b4;
            if (result === 0) {
@@ -828,7 +539,6 @@ function generateAIQuestion(lv) {
             // 合計が3の倍数になるように3つ目を調整
             const sum2 = n1 + n2;
             const n3 = (3 - (sum2 % 3)) % 3 + (r(3) * 3); 
-            
             text = `${n1}, ${n2}, ${n3} の3つのデータの平均値は？`;
             ans = ((n1 + n2 + n3) / 3).toString();
             break;
@@ -838,15 +548,12 @@ function generateAIQuestion(lv) {
     }
     return { unit: config.unit, text: text, ans: ans, lv: lv, hint: config.hint };
 }
-
 // --- 修正：演習前の設定フロー ---
 window.setCount = (num) => {
     currentStep = 0;
     userScore = 0; // テスト中の正解数をカウントするためにリセット
-    
     if (currentMode === "practice") {
         practiceQuestions = [];
-        
         // --- 修了テスト(Lv.16)の場合 ---
         if (selectedLv === 16) {
             totalQuestions = 20; // 修了テストは20問固定
@@ -864,81 +571,139 @@ window.setCount = (num) => {
             }
         }
     }
-
     showSection('test-section');
     document.getElementById('total-step-display').innerText = totalQuestions;
     loadQuestion();
 };
-window.showGuide = (grade, lv) => {
-    const displayArea = document.getElementById('guide-display-area');
-    // 指定された学年とレベルのデータを取得
-    const config = levelMaster[grade].find(l => l.lv === lv);
-    
-    if (config) {
-        displayArea.innerHTML = `
-            <h3>Lv.${lv} ${config.title}</h3>
-            <div class="guide-content">${config.hint}</div>
-        `;
-    }
-};
-// 修了テスト開始ボタン（またはレベル15クリア時）に呼ぶ
-window.startFinalTest = () => {
-    currentMode = "final";
-    userScore = 0;   // ←ここで必ずリセット！
-    currentStep = 0;
-    
-    // 全問題から20問をランダム抽出
-    const allQ = allQuestions[currentGrade]; // 全問題データ
-    practiceQuestions = allQ.sort(() => 0.5 - Math.random()).slice(0, 20);
-
-    // 画面表示の更新
-    document.getElementById('total-step-display').innerText = practiceQuestions.length;
-    loadQuestion(0);
-};
-
-// 回答判定（ここもチェック）
-window.handleAnswer = () => {
-    const userAns = document.getElementById('answer-input').value.trim();
-    const q = practiceQuestions[currentStep];
-
-    if (userAns === q.ans) {
-        userScore++; // 正解なら加算
-        document.getElementById('feedback-result').innerText = "○ 正解";
-    } else {
-        document.getElementById('feedback-result').innerText = "× 不正解";
-    }
-    document.getElementById('feedback-panel').classList.add('show');
-};
 function loadQuestion() {
-    // 【修正】現在の学年に合わせて問題リストを取得
-    const qList = (currentMode === "diagnostic") ? diagnosticQuestions[currentGrade] : practiceQuestions;
-    const q = qList[currentStep];
-
+    const q = (currentMode === "diagnostic") ? diagnosticQuestions[currentStep] : practiceQuestions[currentStep];
     if(!q) return showMenu();
-    
     document.getElementById('q-unit').innerText = q.unit;
-    
     // innerText ではなく innerHTML を使い、\n を <br> に変える
     const qTextEl = document.getElementById('q-text');
     qTextEl.innerHTML = q.text.replace(/\n/g, '<br>');
-    
     document.getElementById('current-step').innerText = currentStep + 1;
     document.getElementById('answer-input').value = "";
     document.getElementById('feedback-panel').classList.remove('show');
 }
-window.handleAnswer = () => {
-    const input = document.getElementById('answer-input');
-    const userAns = input.value.trim();
-    const q = (currentMode === "diagnostic") ? diagnosticQuestions[currentGrade][currentStep] : practiceQuestions[currentStep];
-
-    // デバッグ用にコンソールに正解を出す（完成したら消してOK）
-    console.log(`入力: ${userAns}, 正解: ${q.ans}`);
-
-    if (userAns == q.ans) { // 型が違ってもいいように == を使用
-        userScore++; 
-        document.getElementById('feedback-result').innerText = "正解！";
-    } else {
-        document.getElementById('feedback-result').innerText = "不正解...";
+window.handleAnswer = async () => {
+    const inputField = document.getElementById('answer-input');
+    const q = (currentMode === "diagnostic") ? diagnosticQuestions[currentStep] : practiceQuestions[currentStep];
+    let ans = inputField.value.trim();
+    // normalize関数は以前のものをそのまま使ってください
+    const isCorrect = (normalize(ans) === normalize(q.ans));
+    const currentLv = q.lv || 0;
+    const feedbackPanel = document.getElementById('feedback-panel');
+    const aiComment = document.getElementById('ai-comment');
+    const feedbackResult = document.getElementById('feedback-result');
+    // 結果の文字と色をセット
+    feedbackResult.innerText = isCorrect ? "○ 正解" : "× 不正解";
+    feedbackResult.style.color = isCorrect ? "var(--success)" : "var(--error)"; // CSSの変数を使用
+    // 解説文をセット
+    const config = levelMaster.find(l => l.lv === currentLv);
+    aiComment.innerHTML = isCorrect ? 
+        "正解です！その調子！" : 
+        `正解は <b>${q.ans}</b> です。<br><br><div class="ai-box">【AI解説】<br>${config ? config.hint : "公式をチェック！"}</div>`;
+    // --- 【重要】CSSのアニメーションを発動させる ---
+    feedbackPanel.classList.add('show');
+    feedbackPanel.dataset.isCorrect = isCorrect;
+    // --- 【重要】KaTeXで数式を変換する ---
+    if (window.renderMathInElement) {
+        renderMathInElement(aiComment, {
+            delimiters: [
+                {left: '$', right: '$', display: false},
+                {left: '$$', right: '$$', display: true}
+            ],
+            throwOnError: false
+        });
     }
-    document.getElementById('feedback-panel').classList.add('show');
+    // Firebaseへ保存
+    await set(ref(db, `logs/${currentUser}/${Date.now()}`), { ans, isCorrect, lv: currentLv });
+};
+async function finishDiagnostic() {
+    await set(ref(db, `users/${currentUser}/hasTakenTest`), true);
+    await set(ref(db, `users/${currentUser}/level`), userScore);
+    showMenu();
+}
+// --- 修正：解説後に次へ行くか終了するか ---
+window.nextQuestion = () => {
+    const isCorrect = document.getElementById('feedback-panel').dataset.isCorrect === "true";
+    if (isCorrect) userScore++; 
+    document.getElementById('feedback-panel').classList.remove('show');
+    if (currentMode === "diagnostic") {
+        currentStep++;
+        if (currentStep < diagnosticQuestions.length) {
+            loadQuestion();
+        } else {
+            finishDiagnostic(); // 診断終了
+        }
+    } else { // 練習モード
+        currentStep++;
+        if (currentStep < totalQuestions) {
+            loadQuestion();
+        } else {
+            if (selectedLv === 16) {
+                finishExam(userScore);
+            } else {
+                alert(`${totalQuestions}問中 ${userScore}問正解でした！`);
+                showMenu();
+            }
+        }
+    }
+}; // ここでしっかり閉じる
+// 【修正前】 function showMenu() { ... }
+// 【修正後】 以下の形に書き換え
+window.showMenu = () => {
+    showSection('menu-section');
+    // 到達レベルの表示更新
+    const banner = document.getElementById('recommendation-banner');
+    if (banner) {
+        banner.innerHTML = `<h3>現在の到達レベル: Lv.${userScore}</h3>`;
+    }
+    // PDFボタン付きのレベル一覧を再生成（最新の状態を反映）
+    if (typeof renderLevelMenu === 'function') {
+        renderLevelMenu();
+    }
+};
+window.showRanking = async () => {
+    showSection('ranking-section');
+    const rankingBody = document.getElementById('ranking-body');
+    rankingBody.innerHTML = "<tr><td colspan='3'>読み込み中...</td></tr>";
+    const usersSnap = await get(ref(db, 'users'));
+    const logsSnap = await get(ref(db, 'logs'));
+    const users = usersSnap.val() || {};
+    const allLogs = logsSnap.val() || {};
+    const rankingData = [];
+    for (const name in users) {
+        // logs[ユーザー名] の中にあるデータの数が「挑戦数」
+        let challengeCount = 0;
+        if (allLogs[name]) {
+            challengeCount = Object.keys(allLogs[name]).length;
+        }
+        rankingData.push({ 
+            name: name, 
+            challengeCount: challengeCount, // これを表示に使う
+            isJ1Done: users[name].isJ1Done || false 
+        });
+    }
+    // 挑戦数が多い順に並び替え
+    rankingData.sort((a, b) => b.challengeCount - a.challengeCount);
+    rankingBody.innerHTML = "";
+    rankingData.forEach((data, index) => {
+        const medal = data.isJ1Done ? "🎓" : "";
+        const row = `
+            <tr style="border-bottom: 1px solid #eee; height: 40px;">
+                <td>${index + 1}位 ${medal}</td>
+                <td>${data.name}</td>
+                <td><b>${data.challengeCount}</b> 回</td>
+            </tr>
+        `;
+        rankingBody.innerHTML += row;
+    });
+};
+// --- 修正：演習開始ボタン ---
+window.startUnit = (lv) => {
+    selectedLv = lv; // レベルを覚えさせる
+    currentMode = "practice";
+    showSection('settings-section'); // まず問題数選択へ飛ばす
 };
