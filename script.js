@@ -526,8 +526,7 @@ async function handleCorrectAnswerUpdate(userId) {
 }
 // --- AI問題生成ロジック（修正：レベル名反映） ---
 function generateAIQuestion(lv) {
-    // 現在の学年のリストから該当レベルを探す
-    const config = levelMaster[currentGrade].find(l => l.lv === lv) || levelMaster[currentGrade][0];
+    const config = levelMaster[currentGrade].find(l => l.lv === lv); // 引数の lv を使う
     
     let text = "";
     let ans = "";
@@ -687,6 +686,7 @@ window.handleAnswer = async () => {
     // diagnosticQuestions[currentGrade] を見るように修正
     const q = (currentMode === "diagnostic") ? diagnosticQuestions[currentGrade][currentStep] : practiceQuestions[currentStep];
     let ans = inputField.value.trim();
+    
     // normalize関数は以前のものをそのまま使ってください
     const isCorrect = (normalize(ans) === normalize(q.ans));
     const currentLv = q.lv || 0;
@@ -697,10 +697,12 @@ window.handleAnswer = async () => {
 
     // 結果の文字と色をセット
     feedbackResult.innerText = isCorrect ? "○ 正解" : "× 不正解";
-    feedbackResult.style.color = isCorrect ? "var(--success)" : "var(--error)"; // CSSの変数を使用
+    feedbackResult.style.color = isCorrect ? "var(--success)" : "var(--error)"; 
 
+    // --- 【重要修正】levelMaster[currentGrade] から探すように変更 ---
+    const config = levelMaster[currentGrade].find(l => l.lv === currentLv);
+    
     // 解説文をセット
-    const config = levelMaster.find(l => l.lv === currentLv);
     aiComment.innerHTML = isCorrect ? 
         "正解です！その調子！" : 
         `正解は <b>${q.ans}</b> です。<br><br><div class="ai-box">【AI解説】<br>${config ? config.hint : "公式をチェック！"}</div>`;
@@ -709,121 +711,5 @@ window.handleAnswer = async () => {
     feedbackPanel.classList.add('show');
     feedbackPanel.dataset.isCorrect = isCorrect;
 
-    // --- 【重要】KaTeXで数式を変換する ---
-    if (window.renderMathInElement) {
-        renderMathInElement(aiComment, {
-            delimiters: [
-                {left: '$', right: '$', display: false},
-                {left: '$$', right: '$$', display: true}
-            ],
-            throwOnError: false
-        });
-    }
-
-    // Firebaseへ保存
-    await set(ref(db, `logs/${currentUser}/${Date.now()}`), { ans, isCorrect, lv: currentLv });
-};
-async function finishDiagnostic() {
-    await set(ref(db, `users/${currentUser}/hasTakenTest`), true);
-    await set(ref(db, `users/${currentUser}/level`), userScore);
-    showMenu();
-}
-
-// --- 修正：解説後に次へ行くか終了するか ---
-window.nextQuestion = () => {
-    const isCorrect = document.getElementById('feedback-panel').dataset.isCorrect === "true";
-    if (isCorrect) userScore++; 
-
-    document.getElementById('feedback-panel').classList.remove('show');
-
-    if (currentMode === "diagnostic") {
-        currentStep++;
-        if (currentStep < diagnosticQuestions.length) {
-            loadQuestion();
-        } else {
-            finishDiagnostic(); // 診断終了
-        }
-    } else { // 練習モード
-        currentStep++;
-        if (currentStep < totalQuestions) {
-            loadQuestion();
-        } else {
-            if (selectedLv === 16) {
-                finishExam(userScore);
-            } else {
-                alert(`${totalQuestions}問中 ${userScore}問正解でした！`);
-                showMenu();
-            }
-        }
-    }
-}; // ここでしっかり閉じる
-// 【修正前】 function showMenu() { ... }
-// 【修正後】 以下の形に書き換え
-// 学年選択ボタンを押した時に動く関数
-window.selectGrade = (grade) => {
-    currentGrade = grade; // 選んだ学年を保存
-    userScore = 0;        // スコアをリセット
-    currentMode = "diagnostic"; // 診断モードにする
-    showSection('test-section');
-    currentStep = 0;
-    loadQuestion();
-};
-window.showMenu = () => {
-    showSection('menu-section');
-    const banner = document.getElementById('recommendation-banner');
-    
-    // 表示を「中1-Lv.x」のように動的に変える処理
-    const gradeLabel = (currentGrade === "j1") ? "中1" : "中2";
-    if (banner) {
-        banner.innerHTML = `<h3>現在のレベル: ${gradeLabel}-Lv.${userScore}</h3>`;
-    }
-    renderLevelMenu(); 
-};
-window.showRanking = async () => {
-    showSection('ranking-section');
-    const rankingBody = document.getElementById('ranking-body');
-    rankingBody.innerHTML = "<tr><td colspan='3'>読み込み中...</td></tr>";
-
-    const usersSnap = await get(ref(db, 'users'));
-    const logsSnap = await get(ref(db, 'logs'));
-    const users = usersSnap.val() || {};
-    const allLogs = logsSnap.val() || {};
-    
-    const rankingData = [];
-
-    for (const name in users) {
-        // logs[ユーザー名] の中にあるデータの数が「挑戦数」
-        let challengeCount = 0;
-        if (allLogs[name]) {
-            challengeCount = Object.keys(allLogs[name]).length;
-        }
-
-        rankingData.push({ 
-            name: name, 
-            challengeCount: challengeCount, // これを表示に使う
-            isJ1Done: users[name].isJ1Done || false 
-        });
-    }
-
-    // 挑戦数が多い順に並び替え
-    rankingData.sort((a, b) => b.challengeCount - a.challengeCount);
-
-    rankingBody.innerHTML = "";
-    rankingData.forEach((data, index) => {
-        const medal = data.isJ1Done ? "🎓" : "";
-        const row = `
-            <tr style="border-bottom: 1px solid #eee; height: 40px;">
-                <td>${index + 1}位 ${medal}</td>
-                <td>${data.name}</td>
-                <td><b>${data.challengeCount}</b> 回</td>
-            </tr>
-        `;
-        rankingBody.innerHTML += row;
-    });
-};
-// --- 修正：演習開始ボタン ---
-window.startUnit = (lv) => {
-    selectedLv = lv; // レベルを覚えさせる
-    currentMode = "practice";
-    showSection('settings-section'); // まず問題数選択へ飛ばす
+    // スコア加算なども必要ならここに追加（例：if(isCorrect) userScore++;）
 };
