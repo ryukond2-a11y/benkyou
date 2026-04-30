@@ -177,26 +177,23 @@ function normalize(str) {
 }
 // 「次へ」ボタンを押した時の処理を定義
 window.nextQuestion = () => {
-    // 1. 次の問題へインデックスを進める
     currentStep++;
-
-    // 2. 問題リストを取得（診断か演習か）
     const qList = (currentMode === "diagnostic") ? diagnosticQuestions[currentGrade] : practiceQuestions;
 
-    // 3. 次の問題があるかチェック
     if (currentStep < qList.length) {
-        // 次の問題を表示
         loadQuestion(currentStep);
-        
-        // フィードバック画面を隠す
         document.getElementById('feedback-panel').classList.remove('show');
     } else {
-        // 全問終了時の処理
-        if (currentMode === "diagnostic") {
-            finishDiagnostic(); // 診断終了関数（自分で定義したもの）へ
+        // 終了時のメッセージを表示
+        alert(`演習完了！\n結果：${qList.length}問中 ${userScore}問正解でした！`);
+        
+        // エラー箇所の修正：ダッシュボードに戻る関数を正しく呼ぶ
+        // もし showDashboard という名前でないなら、ホームに戻る関数名に変えてください
+        if (typeof showDashboard === "function") {
+            showDashboard();
         } else {
-            alert("演習完了です！");
-            showDashboard(); // ダッシュボードへ戻る
+            // 関数名が不明な場合は、画面をリロードするか非表示にする
+            location.reload(); 
         }
     }
 };
