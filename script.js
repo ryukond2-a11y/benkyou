@@ -188,24 +188,28 @@ window.startUnit = (lv) => {
 };
 // 学年切り替え：見た目の変更とデータの更新
 window.switchGrade = (grade) => {
-    currentGrade = grade; // "j1" か "j2"
+    currentGrade = grade; // "j1" または "j2"
     
-    // HTML上のタブボタンの色を切り替え
     const btn1 = document.getElementById('tab-j1');
     const btn2 = document.getElementById('tab-j2');
     
+    // 学年選択ボタンの色の切り替え
     if (grade === 'j1') {
         btn1.style.background = "#4a90e2"; btn1.style.color = "white";
-        btn2.style.background = "none"; btn2.style.color = "#666";
+        btn2.style.background = "#eee"; btn2.style.color = "#666"; // 中2をグレーに
         document.getElementById('menu-title').innerText = "中1数学ロードマップ";
     } else {
-        btn2.style.background = "#4a90e2"; btn2.style.color = "white";
-        btn1.style.background = "none"; btn1.style.color = "#666";
+        btn2.style.background = "#4a90e2"; btn2.style.color = "white"; // 中2を青に
+        btn1.style.background = "#eee"; btn1.style.color = "#666"; // 中1をグレーに
         document.getElementById('menu-title').innerText = "中2数学ロードマップ";
     }
 
-    // メニュー一覧（ユニットリスト）を再描画
-    if (typeof renderLevelMenu === 'function') renderLevelMenu();
+    // 解説ダッシュボード側のタブも連動させる
+    if (typeof switchTab === 'function') {
+        switchTab(grade); 
+    }
+
+    renderLevelMenu(); // メニューリストの更新
 };
 window.showSection = (id) => {
     const sections = ['auth-choice', 'auth-form', 'settings-section', 'test-section', 'menu-section', 'ranking-section'];
@@ -232,49 +236,88 @@ window.startUnit = (lv) => {
     showSection('settings-section'); // まず「何問解くか」の画面を出す
 };
 window.showRanking = async () => {
+
     showSection('ranking-section');
+
     const rankingBody = document.getElementById('ranking-body');
+
     rankingBody.innerHTML = "<tr><td colspan='3'>読み込み中...</td></tr>";
 
-    try {
-        // 全ユーザーのログを取得
-        const logsSnap = await get(ref(db, 'logs'));
-        if (!logsSnap.exists()) {
-            rankingBody.innerHTML = "<tr><td colspan='3'>データがありません</td></tr>";
-            return;
+
+
+    const usersSnap = await get(ref(db, 'users'));
+
+    const logsSnap = await get(ref(db, 'logs'));
+
+    const users = usersSnap.val() || {};
+
+    const allLogs = logsSnap.val() || {};
+
+    
+
+    const rankingData = [];
+
+
+
+    for (const name in users) {
+
+        // logs[ユーザー名] の中にあるデータの数が「挑戦数」
+
+        let challengeCount = 0;
+
+        if (allLogs[name]) {
+
+            challengeCount = Object.keys(allLogs[name]).length;
+
         }
 
-        const allLogs = logsSnap.val();
-        const rankingData = [];
 
-        // ユーザーごとにログの数を数える
-        for (const username in allLogs) {
-            const solveCount = Object.keys(allLogs[username]).length;
-            rankingData.push({ name: username, count: solveCount });
-        }
 
-        // 挑戦数が多い順に並び替え
-        rankingData.sort((a, b) => b.count - a.count);
+        rankingData.push({ 
 
-        // テーブルに表示
-        rankingBody.innerHTML = "";
-        rankingData.forEach((data, index) => {
-            const row = `
-                <tr style="border-bottom: 1px solid #eee; height: 40px;">
-                    <td>${index + 1}位</td>
-                    <td>${data.name}</td>
-                    <td><b>${data.count}</b> 問</td>
-                </tr>
-            `;
-            rankingBody.innerHTML += row;
+            name: name, 
+
+            challengeCount: challengeCount, // これを表示に使う
+
+            isJ1Done: users[name].isJ1Done || false 
+
         });
-    } catch (e) {
-        console.error(e);
-        rankingBody.innerHTML = "<tr><td colspan='3'>エラーが発生しました</td></tr>";
-    }
-};
 
-// 問題数を決定してクイズ画面へ（これで問題が出ないのを解決）
+    }
+
+
+
+    // 挑戦数が多い順に並び替え
+
+    rankingData.sort((a, b) => b.challengeCount - a.challengeCount);
+
+
+
+    rankingBody.innerHTML = "";
+
+    rankingData.forEach((data, index) => {
+
+        const medal = data.isJ1Done ? "🎓" : "";
+
+        const row = `
+
+            <tr style="border-bottom: 1px solid #eee; height: 40px;">
+
+                <td>${index + 1}位 ${medal}</td>
+
+                <td>${data.name}</td>
+
+                <td><b>${data.challengeCount}</b> 回</td>
+
+            </tr>
+
+        `;
+
+        rankingBody.innerHTML += row;
+
+    });
+
+};してクイズ画面へ（これで問題が出ないのを解決）
 window.setCount = (num) => {
     totalStep = num;
     currentStep = 0;
@@ -298,17 +341,20 @@ window.showMenu = () => {
     renderLevelMenu();
 };
 window.openDashboard = () => {
-    const dashboard = document.getElementById('guide-dashboard');
-    if (dashboard) {
-        dashboard.style.display = "block";
-        history.pushState({ page: "guide" }, ""); 
-        
-        // switchTab('j1') ではなく、タイルを表示する関数を呼ぶ
-        renderLevelTiles('j1'); 
+    const dash = document.getElementById('guide-dashboard');
+    if (dash) {
+        dash.style.display = 'block';
+        // 今の学年（currentGrade）に基づいてボタンを生成
+        switchTab(currentGrade); 
     }
 };
 window.switchTab = (tab) => {
-    const container = document.getElementById('guide-content');
+    // 【追加】タブボタンの見た目（アクティブ状態）を切り替える
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.id === `tab-${tab}`);
+    });
+
+    const container = document.getElementById('guide-display-area'); // HTMLのIDに合わせて修正
     if (!container) return;
 
     // 学年名を表示用に変換
@@ -327,7 +373,7 @@ window.switchTab = (tab) => {
             <p style="font-size: 0.9em; color: #666;">各レベルのポイントを復習しよう！</p>
     `;
 
-    // levelMaster[tab] （j1やj2の中身）をループ回す
+    // levelMaster[tab] をループで回す
     levelMaster[tab].forEach(item => {
         if (item.lv === 16) return; // 修了テストはスキップ
 
@@ -342,7 +388,7 @@ window.switchTab = (tab) => {
                 border-left: 5px solid #2196f3;
             ">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <span style="font-weight: bold; color: #1976d2;">Lv.${item.lv} ${item.unit}</span>
+                    <span style="font-weight: bold; color: #1976d2;">Lv.${item.lv} ${item.unit || ""}</span>
                     <span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 12px; font-size: 0.8em;">${item.title}</span>
                 </div>
                 <div class="hint-text" style="font-size: 0.95em; line-height: 1.5; color: #333;">
@@ -355,7 +401,7 @@ window.switchTab = (tab) => {
     html += `</div>`;
     container.innerHTML = html;
 
-    // 数式反映
+    // 数式反映（KaTeX）
     if (window.renderMathInElement) {
         renderMathInElement(container, {
             delimiters: [
@@ -782,6 +828,18 @@ window.setCount = (num) => {
     showSection('test-section');
     document.getElementById('total-step-display').innerText = totalQuestions;
     loadQuestion();
+};
+window.showGuide = (grade, lv) => {
+    const displayArea = document.getElementById('guide-display-area');
+    // 指定された学年とレベルのデータを取得
+    const config = levelMaster[grade].find(l => l.lv === lv);
+    
+    if (config) {
+        displayArea.innerHTML = `
+            <h3>Lv.${lv} ${config.title}</h3>
+            <div class="guide-content">${config.hint}</div>
+        `;
+    }
 };
 function loadQuestion() {
     // 【修正】現在の学年に合わせて問題リストを取得
