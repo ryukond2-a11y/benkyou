@@ -317,7 +317,7 @@ window.showRanking = async () => {
 
     });
 
-};してクイズ画面へ（これで問題が出ないのを解決）
+};
 window.setCount = (num) => {
     totalStep = num;
     currentStep = 0;
