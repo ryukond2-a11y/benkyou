@@ -175,8 +175,28 @@ function normalize(str) {
         // 5. 英字を小文字に統一
         .toLowerCase();           
 }
-         
+window.startUnit = (lv) => {
+    currentMode = "practice";
+    currentStep = 0;
+    
+    // そのレベルの問題をAI生成（または抽出）してセット
+    practiceQuestions = generateAIQuestion(lv); 
+    
+    // 画面を切り替えて最初の問題を表示
+    showSection('quiz-section');
+    showQuestion();
+};
+window.switchGrade = (grade) => {
+    currentGrade = grade; // "j1" または "j2" を代入
+    
+    // ボタンの見た目（アクティブ状態）を切り替える処理
+    document.querySelectorAll('.grade-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.grade === grade);
+    });
 
+    // 学年に合わせてメニュー（レベル一覧）を作り直す
+    renderLevelMenu();
+};
 // --- メニュー画面を表示する関数 ---
 window.showMenu = () => {
     // 診断モードを終了し、メニューセクションを表示
