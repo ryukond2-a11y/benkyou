@@ -15,6 +15,7 @@ let authMode = 'login';
 let currentUser = "";
 let currentStep = 0;
 let userScore = 0;
+let currentGrade = "j1";
 let totalQuestions = 15;
 let aiAnswer = "";
 let currentMode = "diagnostic"; 
@@ -22,8 +23,8 @@ let practiceQuestions = [];
 let selectedLv = 1; // 追加：演習レベル保持用
 
 // --- 中1数学 15レベル定義（hintを追加） ---
-const levelMaster = [
-    { 
+const levelMaster = {
+    j1:      { 
         lv: 1, 
         unit: "正負の数", 
         title: "加減", 
@@ -116,9 +117,30 @@ const levelMaster = [
         hint: "これが最終試練！中1数学の全範囲からランダムに出題されます。20問中18問正解で合格。今までのレベルで学んだヒントを思い出して、落ち着いて解いていこう！", 
         isExam: true 
     }
-];
+];       /* 前回の16レベルをここに入れる（省略） */
+    j2: [
+        { lv: 1, unit: "式の計算", title: "単項式・多項式", hint: "<b>【式の計算】</b><br>次数や係数を確認しましょう。文字の部分が同じ項（同類項）だけをまとめます！<br>例：$3a + 5b - a = 2a + 5b$" },
+        { lv: 2, unit: "式の計算", title: "乗法・除法", hint: "<b>【単項式の乗除】</b><br>係数は係数どうし、文字は文字どうしで計算します。累乗の指数に注意！<br>例：$2a \times 3ab = 6a^2b$" },
+        { lv: 3, unit: "式の計算", title: "文字式の利用", hint: "<b>【等式の変形】</b><br>「$x$ について解く」とは、$x = \dots$ の形にすることです。移行や両辺を割る操作を駆使しましょう。" },
+        { lv: 4, unit: "連立方程式", title: "加減法", hint: "<b>【加減法】</b><br>上の式と下の式を足したり引いたりして、一方の文字を消去するのがコツです！" },
+        { lv: 5, unit: "連立方程式", title: "代入法", hint: "<b>【代入法】</b><br>$y = 3x$ のような形があれば、もう一つの式の $y$ に $(3x)$ をそのまま放り込みます。" },
+        { lv: 6, unit: "連立方程式", title: "複雑な計算", hint: "<b>【カッコ・小数・分数】</b><br>中1の方程式と同じく、まずは整理してシンプルな形にしてから加減法や代入法を使いましょう。" },
+        { lv: 7, unit: "一次関数", title: "変化の割合", hint: "<b>【変化の割合】</b><br>$\frac{yの増加量}{xの増加量}$ で求められます。一次関数 $y=ax+b$ では、$a$ の値と常に一致します。" },
+        { lv: 8, unit: "一次関数", title: "グラフ", hint: "<b>【傾きと切片】</b><br>$y = ax + b$ の $b$ が切片（$y$軸との交点）、$a$ が傾きです。切片を打ってから傾き分だけ進むと書けるよ！" },
+        { lv: 9, unit: "一次関数", title: "式の決定", hint: "<b>【式を求める】</b><br>通る2点の座標を代入して連立方程式を作るか、傾きと1点から $b$ を求めましょう。" },
+        { lv: 10, unit: "平行と合同", title: "平行線と角", hint: "<b>【対頂角・同位角・錯角】</b><br>平行線なら同位角と錯角は等しくなります。Zの形（錯角）を探すのが基本！" },
+        { lv: 11, unit: "平行と合同", title: "三角形の角", hint: "<b>【外角の性質】</b><br>三角形の内角の和は180度。また、1つの外角はそれと隣り合わない2つの内角の和に等しいです！" },
+        { lv: 12, unit: "平行と合同", title: "合同条件", hint: "<b>【三角形の合同条件】</b><br>①3組の辺が等しい ②2組の辺とその間の角 ③1組の辺とその両端の角。正確に覚えよう！" },
+        { lv: 13, unit: "図形の性質", title: "特別な三角形", hint: "<b>【二等辺・正三角形】</b><br>二等辺三角形の底角は等しい。正三角形は3つの角がすべて60度です。" },
+        { lv: 14, unit: "図形の性質", title: "平行四辺形", hint: "<b>【平行四辺形の性質】</b><br>向かい合う辺、角がそれぞれ等しい。対角線がそれぞれの中点で交わる、の3つが大事！" },
+        { lv: 15, unit: "確率", title: "確率の基礎", hint: "<b>【確率の求め方】</b><br>$\frac{そのことが起こる場合数}{すべての場合数}$。樹形図や表を丁寧に書いて、モレなく数えるのが一番の近道！" },
+        { lv: 16, unit: "中2修了", title: "修了テスト", hint: "中2数学の全範囲テストです！頑張って！", isExam: true }
+    ]
+};
+
 // --- 診断テスト用 15問 ---
-const diagnosticQuestions = [
+const diagnosticQuestions = {
+    j1: [
     { lv: 1, unit: "正負の数", text: "(-8) + (+5) は？\n（半角で記入）", ans: "-3" },
     { lv: 2, unit: "正負の数", text: "(-2) × (-7) は？\n（半角で記入）", ans: "14" },
     { lv: 3, unit: "正負の数", text: "(-3)^2 - 5 は？\n（半角で記入）", ans: "4" },
@@ -134,7 +156,27 @@ const diagnosticQuestions = [
     { lv: 13, unit: "空間図形", text: "底面積10, 高さ6 de 三角柱の体積は？", ans: "60" },
     { lv: 14, unit: "空間図形", text: "半径3cmの球の表面積は？(πを用いて回答)", ans: "36π" },
     { lv: 15, unit: "データの活用", text: "3, 7, 11, 19の4つのデータの平均値は？", ans: "10" }
-];
+    ],
+    
+
+    j2: [
+        { lv: 1, unit: "式の計算", text: "5a - 3b - 2a + b を計算せよ", ans: "3a-2b" },
+        { lv: 2, unit: "式の計算", text: "(-4a) × 2b は？", ans: "-8ab" },
+        { lv: 3, unit: "文字式の利用", text: "S = ab を b について解け", ans: "b=S/a" },
+        { lv: 4, unit: "連立方程式", text: "x+y=5, x-y=1 のとき x は？", ans: "3" },
+        { lv: 5, unit: "連立方程式", text: "y=2x と x+y=9 のとき x は？", ans: "3" },
+        { lv: 6, unit: "連立方程式", text: "0.1x + 0.2y = 0.5 を整数に直すと？", ans: "x+2y=5" },
+        { lv: 7, unit: "一次関数", text: "y = -2x + 3 の変化の割合は？", ans: "-2" },
+        { lv: 8, unit: "一次関数", text: "y = 4x - 1 の切片(b)の値は？", ans: "-1" },
+        { lv: 9, unit: "一次関数", text: "傾きが2で点(0, 3)を通る直線の式は？", ans: "y=2x+3" },
+        { lv: 10, unit: "平行と合同", text: "三角形の内角の和は何度？", ans: "180" },
+        { lv: 11, unit: "平行と合同", text: "正n角形の外角の和は常に何度？", ans: "360" },
+        { lv: 12, unit: "平行と合同", text: "2組の辺とその間の（　）が等しい", ans: "角" },
+        { lv: 13, unit: "図形の性質", text: "二等辺三角形の底角は等しい。◯か×か", ans: "◯" },
+        { lv: 14, unit: "図形の性質", text: "平行四辺形の対角線はそれぞれの中点で（　）", ans: "交わる" },
+        { lv: 15, unit: "確率", text: "コインを1回投げて表が出る確率は？", ans: "1/2" }
+    ]
+};
 // 回答の全角・半角や空白を整える関数
 // 回答の全角・半角や空白、似た記号を整える関数
 // 回答の全角・半角や空白、似た記号を整える関数
@@ -170,54 +212,59 @@ window.switchTab = (tab) => {
     const container = document.getElementById('guide-content');
     if (!container) return;
 
-    // 中1数学 (j1) の解説一覧を生成
-    if (tab === 'j1') {
-        let html = `
-            <div style="padding: 10px;">
-                <h3 style="border-bottom: 2px solid #2196f3; padding-bottom: 5px;">中1数学 解説・公式一覧</h3>
-                <p style="font-size: 0.9em; color: #666;">各レベルのポイントを復習しよう！</p>
-        `;
+    // 学年名を表示用に変換
+    const gradeNames = { "j1": "中1", "j2": "中2", "j3": "中3" };
+    const gradeName = gradeNames[tab] || tab;
 
-        levelMaster.forEach(item => {
-            // 修了テスト（Lv.16）は解説不要なのでスキップ
-            if (item.lv === 16) return;
+    // データがあるかチェック
+    if (!levelMaster[tab]) {
+        container.innerHTML = `<p style='padding: 20px;'>${gradeName}の内容は準備中です。</p>`;
+        return;
+    }
 
-            html += `
-                <div class="explanation-card" style="
-                    background: white; 
-                    border: 1px solid #ddd; 
-                    border-radius: 10px; 
-                    padding: 12px; 
-                    margin-bottom: 15px; 
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-                    border-left: 5px solid #2196f3;
-                ">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                        <span style="font-weight: bold; color: #1976d2;">Lv.${item.lv} ${item.unit}</span>
-                        <span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 12px; font-size: 0.8em;">${item.title}</span>
-                    </div>
-                    <div class="hint-text" style="font-size: 0.95em; line-height: 1.5; color: #333;">
-                        ${item.hint}
-                    </div>
+    let html = `
+        <div style="padding: 10px;">
+            <h3 style="border-bottom: 2px solid #2196f3; padding-bottom: 5px;">${gradeName}数学 解説・公式一覧</h3>
+            <p style="font-size: 0.9em; color: #666;">各レベルのポイントを復習しよう！</p>
+    `;
+
+    // levelMaster[tab] （j1やj2の中身）をループ回す
+    levelMaster[tab].forEach(item => {
+        if (item.lv === 16) return; // 修了テストはスキップ
+
+        html += `
+            <div class="explanation-card" style="
+                background: white; 
+                border: 1px solid #ddd; 
+                border-radius: 10px; 
+                padding: 12px; 
+                margin-bottom: 15px; 
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                border-left: 5px solid #2196f3;
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <span style="font-weight: bold; color: #1976d2;">Lv.${item.lv} ${item.unit}</span>
+                    <span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 12px; font-size: 0.8em;">${item.title}</span>
                 </div>
-            `;
+                <div class="hint-text" style="font-size: 0.95em; line-height: 1.5; color: #333;">
+                    ${item.hint}
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    container.innerHTML = html;
+
+    // 数式反映
+    if (window.renderMathInElement) {
+        renderMathInElement(container, {
+            delimiters: [
+                {left: '$', right: '$', display: false},
+                {left: '$$', right: '$$', display: true}
+            ],
+            throwOnError: false
         });
-
-        html += `</div>`;
-        container.innerHTML = html;
-
-        // 数式 (LaTeX) を反映させる
-        if (window.renderMathInElement) {
-            renderMathInElement(container, {
-                delimiters: [
-                    {left: '$', right: '$', display: false},
-                    {left: '$$', right: '$$', display: true}
-                ],
-                throwOnError: false
-            });
-        }
-    } else {
-        container.innerHTML = "<p style='padding: 20px;'>中2・中3の内容は準備中です。</p>";
     }
 };
 // レベルメニューを動的に生成する関数
@@ -265,24 +312,28 @@ window.closeDashboard = () => {
 function renderLevelTiles(grade) {
     const grid = document.getElementById('level-button-grid');
     grid.innerHTML = "";
-    if(grade !== 'j1') {
-        document.getElementById('guide-display-area').innerHTML = "中2・中3は準備中です。";
+
+    // 【修正】levelMaster[grade] を見に行くようにする
+    if(!levelMaster[grade]) {
+        document.getElementById('guide-display-area').innerHTML = "準備中です。";
         return;
     }
     
-    levelMaster.forEach(item => {
+    levelMaster[grade].forEach(item => {
         if(item.lv === 16) return;
         const tile = document.createElement('div');
         tile.className = "level-tile";
         tile.innerText = `Lv.${item.lv}`;
-        tile.onclick = () => showGuide(item.lv);
+        // 【修正】クリックした時に今の学年の解説を出す
+        tile.onclick = () => showGuide(item.lv, grade); 
         grid.appendChild(tile);
     });
 }
 
 // 実際の解説文を表示する
-function showGuide(lv) {
-    const item = levelMaster.find(l => l.lv === lv);
+function showGuide(lv, grade = currentGrade) {
+    // 【修正】指定された学年のデータから探す
+    const item = levelMaster[grade].find(l => l.lv === lv);
     const displayArea = document.getElementById('guide-display-area');
     if (!item) return;
 
@@ -631,7 +682,10 @@ window.setCount = (num) => {
     loadQuestion();
 };
 function loadQuestion() {
-    const q = (currentMode === "diagnostic") ? diagnosticQuestions[currentStep] : practiceQuestions[currentStep];
+    // 【修正】現在の学年に合わせて問題リストを取得
+    const qList = (currentMode === "diagnostic") ? diagnosticQuestions[currentGrade] : practiceQuestions;
+    const q = qList[currentStep];
+
     if(!q) return showMenu();
     
     document.getElementById('q-unit').innerText = q.unit;
@@ -721,20 +775,25 @@ window.nextQuestion = () => {
 }; // ここでしっかり閉じる
 // 【修正前】 function showMenu() { ... }
 // 【修正後】 以下の形に書き換え
-
+// 学年選択ボタンを押した時に動く関数
+window.selectGrade = (grade) => {
+    currentGrade = grade; // 選んだ学年を保存
+    userScore = 0;        // スコアをリセット
+    currentMode = "diagnostic"; // 診断モードにする
+    showSection('test-section');
+    currentStep = 0;
+    loadQuestion();
+};
 window.showMenu = () => {
     showSection('menu-section');
-    
-    // 到達レベルの表示更新
     const banner = document.getElementById('recommendation-banner');
+    
+    // 表示を「中1-Lv.x」のように動的に変える処理
+    const gradeLabel = (currentGrade === "j1") ? "中1" : "中2";
     if (banner) {
-        banner.innerHTML = `<h3>現在の到達レベル: Lv.${userScore}</h3>`;
+        banner.innerHTML = `<h3>現在のレベル: ${gradeLabel}-Lv.${userScore}</h3>`;
     }
-
-    // PDFボタン付きのレベル一覧を再生成（最新の状態を反映）
-    if (typeof renderLevelMenu === 'function') {
-        renderLevelMenu();
-    }
+    renderLevelMenu(); 
 };
 window.showRanking = async () => {
     showSection('ranking-section');
