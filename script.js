@@ -6,7 +6,9 @@ const firebaseConfig = {
     databaseURL: "https://benkyou-9a95b-default-rtdb.firebaseio.com/",
     projectId: "benkyou-9a95b",
 };
-
+// レベル別ボタン（個別）を非表示にする
+const lvButton = document.getElementById('level-hint-btn');
+if (lvButton) lvButton.remove();
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
@@ -157,6 +159,18 @@ const diagnosticQuestions = {
         { lv: 15, unit: "確率", text: "コインを1回投げて表が出る確率は？", ans: "1/2" }
     ]
 };
+function startFinalTest() {
+    currentMode = "final";
+    userScore = 0;
+    currentStep = 0;
+    
+    // 全問題からランダムに20問抽出
+    practiceQuestions = allQuestions[currentGrade]
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 20); 
+
+    loadQuestion(0);
+}
 // 回答の全角・半角や空白を整える関数
 // 回答の全角・半角や空白、似た記号を整える関数
 // 回答の全角・半角や空白、似た記号を整える関数
@@ -210,28 +224,49 @@ window.startUnit = (lv) => {
 };
 // 学年切り替え：見た目の変更とデータの更新
 window.switchGrade = (grade) => {
-    currentGrade = grade; // "j1" または "j2"
+    currentGrade = grade; // "j1", "j2", "j3"
     
-    const btn1 = document.getElementById('tab-j1');
-    const btn2 = document.getElementById('tab-j2');
+    // --- 1. ボタンの色の切り替え (全ての学年ボタンをまとめて処理) ---
+    const gradeButtons = ['j1', 'j2', 'j3'];
     
-    // 学年選択ボタンの色の切り替え
-    if (grade === 'j1') {
-        btn1.style.background = "#4a90e2"; btn1.style.color = "white";
-        btn2.style.background = "#eee"; btn2.style.color = "#666"; // 中2をグレーに
-        document.getElementById('menu-title').innerText = "中1数学ロードマップ";
-    } else {
-        btn2.style.background = "#4a90e2"; btn2.style.color = "white"; // 中2を青に
-        btn1.style.background = "#eee"; btn1.style.color = "#666"; // 中1をグレーに
-        document.getElementById('menu-title').innerText = "中2数学ロードマップ";
-    }
+    gradeButtons.forEach(g => {
+        // ロードマップ側と解説側の両方のボタンを取得（IDが共通または複数ある場合を考慮）
+        const btns = [
+            document.getElementById(`tab-${g}`),
+            document.getElementById(`exp-tab-${g}`) // 解説側のボタンIDもあれば
+        ];
 
-    // 解説ダッシュボード側のタブも連動させる
+        btns.forEach(btn => {
+            if (!btn) return;
+            if (g === grade) {
+                // 選択された学年：青色
+                btn.style.background = "#4a90e2";
+                btn.style.color = "white";
+                btn.style.boxShadow = "inset 0 2px 4px rgba(0,0,0,0.2)";
+            } else {
+                // 選択されていない学年：グレー
+                btn.style.background = "#eee";
+                btn.style.color = "#666";
+                btn.style.boxShadow = "none";
+            }
+        });
+    });
+
+    // --- 2. タイトルの更新 ---
+    const titles = { "j1": "中1数学", "j2": "中2数学", "j3": "中3数学" };
+    const titleElem = document.getElementById('menu-title');
+    if (titleElem) titleElem.innerText = `${titles[grade]}ロードマップ`;
+
+    // --- 3. 解説ダッシュボード側の表示切り替え ---
+    // もし switchTab という関数で中身を切り替えているなら実行
     if (typeof switchTab === 'function') {
         switchTab(grade); 
     }
 
-    renderLevelMenu(); // メニューリストの更新
+    // --- 4. 演習メニュー（Lv.1〜15のボタン）の再描画 ---
+    if (typeof renderLevelMenu === 'function') {
+        renderLevelMenu(); 
+    }
 };
 window.showSection = (id) => {
     const sections = ['auth-choice', 'auth-form', 'settings-section', 'test-section', 'menu-section', 'ranking-section'];
