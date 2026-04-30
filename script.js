@@ -186,17 +186,108 @@ window.startUnit = (lv) => {
     showSection('quiz-section');
     showQuestion();
 };
+// 学年切り替え：見た目の変更とデータの更新
 window.switchGrade = (grade) => {
-    currentGrade = grade; // "j1" または "j2" を代入
+    currentGrade = grade; // "j1" か "j2"
     
-    // ボタンの見た目（アクティブ状態）を切り替える処理
-    document.querySelectorAll('.grade-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.grade === grade);
+    // HTML上のタブボタンの色を切り替え
+    const btn1 = document.getElementById('tab-j1');
+    const btn2 = document.getElementById('tab-j2');
+    
+    if (grade === 'j1') {
+        btn1.style.background = "#4a90e2"; btn1.style.color = "white";
+        btn2.style.background = "none"; btn2.style.color = "#666";
+        document.getElementById('menu-title').innerText = "中1数学ロードマップ";
+    } else {
+        btn2.style.background = "#4a90e2"; btn2.style.color = "white";
+        btn1.style.background = "none"; btn1.style.color = "#666";
+        document.getElementById('menu-title').innerText = "中2数学ロードマップ";
+    }
+
+    // メニュー一覧（ユニットリスト）を再描画
+    if (typeof renderLevelMenu === 'function') renderLevelMenu();
+};
+window.showSection = (id) => {
+    const sections = ['auth-choice', 'auth-form', 'settings-section', 'test-section', 'menu-section', 'ranking-section'];
+    
+    sections.forEach(s => {
+        const el = document.getElementById(s);
+        if (el) {
+            el.classList.add('hidden'); // 一旦全部隠す
+            el.style.display = 'none';   // 念のためdisplayも制御
+        }
     });
 
-    // 学年に合わせてメニュー（レベル一覧）を作り直す
-    renderLevelMenu();
+    const target = document.getElementById(id);
+    if (target) {
+        target.classList.remove('hidden');
+        target.style.display = 'block';
+    } else {
+        console.error(`ID: ${id} が見つかりません。HTMLのIDを確認してください。`);
+    }
 };
+// 問題開始：設定画面を表示してからクイズへ
+window.startUnit = (lv) => {
+    window.selectedLv = lv; // 選んだレベルを一時保存
+    showSection('settings-section'); // まず「何問解くか」の画面を出す
+};
+window.showRanking = async () => {
+    showSection('ranking-section');
+    const rankingBody = document.getElementById('ranking-body');
+    rankingBody.innerHTML = "<tr><td colspan='3'>読み込み中...</td></tr>";
+
+    try {
+        // 全ユーザーのログを取得
+        const logsSnap = await get(ref(db, 'logs'));
+        if (!logsSnap.exists()) {
+            rankingBody.innerHTML = "<tr><td colspan='3'>データがありません</td></tr>";
+            return;
+        }
+
+        const allLogs = logsSnap.val();
+        const rankingData = [];
+
+        // ユーザーごとにログの数を数える
+        for (const username in allLogs) {
+            const solveCount = Object.keys(allLogs[username]).length;
+            rankingData.push({ name: username, count: solveCount });
+        }
+
+        // 挑戦数が多い順に並び替え
+        rankingData.sort((a, b) => b.count - a.count);
+
+        // テーブルに表示
+        rankingBody.innerHTML = "";
+        rankingData.forEach((data, index) => {
+            const row = `
+                <tr style="border-bottom: 1px solid #eee; height: 40px;">
+                    <td>${index + 1}位</td>
+                    <td>${data.name}</td>
+                    <td><b>${data.count}</b> 問</td>
+                </tr>
+            `;
+            rankingBody.innerHTML += row;
+        });
+    } catch (e) {
+        console.error(e);
+        rankingBody.innerHTML = "<tr><td colspan='3'>エラーが発生しました</td></tr>";
+    }
+};
+
+// 問題数を決定してクイズ画面へ（これで問題が出ないのを解決）
+window.setCount = (num) => {
+    totalStep = num;
+    currentStep = 0;
+    document.getElementById('total-step-display').innerText = totalStep;
+    
+    // 問題を生成
+    practiceQuestions = generateAIQuestion(window.selectedLv);
+    
+    // クイズ画面を表示
+    showSection('test-section'); // HTMLのID 'test-section' に合わせる
+    showQuestion();
+};
+
 // --- メニュー画面を表示する関数 ---
 window.showMenu = () => {
     // 診断モードを終了し、メニューセクションを表示
