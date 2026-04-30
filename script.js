@@ -177,7 +177,15 @@ function normalize(str) {
 }
          
 
-
+// --- メニュー画面を表示する関数 ---
+window.showMenu = () => {
+    // 診断モードを終了し、メニューセクションを表示
+    currentMode = "practice"; 
+    showSection('menu-section');
+    
+    // メニュー内のレベル一覧を再描画（現在の学年に合わせる）
+    renderLevelMenu();
+};
 window.openDashboard = () => {
     const dashboard = document.getElementById('guide-dashboard');
     if (dashboard) {
