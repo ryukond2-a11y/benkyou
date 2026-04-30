@@ -192,22 +192,26 @@ function normalize(str) {
 // 「次へ」ボタンを押した時の処理を定義
 window.nextQuestion = () => {
     currentStep++;
+    // モードに応じて問題リストを選択
     const qList = (currentMode === "diagnostic") ? diagnosticQuestions[currentGrade] : practiceQuestions;
 
     if (currentStep < qList.length) {
+        // 次の問題へ
+        document.getElementById('current-step').innerText = currentStep + 1;
         loadQuestion(currentStep);
         document.getElementById('feedback-panel').classList.remove('show');
     } else {
-        // 終了時のメッセージを表示
-        alert(`演習完了！\n結果：${qList.length}問中 ${userScore}問正解でした！`);
-        
-        // エラー箇所の修正：ダッシュボードに戻る関数を正しく呼ぶ
-        // もし showDashboard という名前でないなら、ホームに戻る関数名に変えてください
-        if (typeof showDashboard === "function") {
-            showDashboard();
+        // 全問終了時
+        document.getElementById('feedback-panel').classList.remove('show');
+        document.getElementById('test-section').classList.add('hidden');
+        document.getElementById('menu-section').classList.remove('hidden');
+
+        if (currentMode === "final") {
+            // あなたが持っている既存の finishExam をそのまま実行
+            finishExam(userScore); 
         } else {
-            // 関数名が不明な場合は、画面をリロードするか非表示にする
-            location.reload(); 
+            alert(`終了！ ${qList.length}問中 ${userScore}問正解！`);
+            showMenu(); 
         }
     }
 };
@@ -226,47 +230,26 @@ window.startUnit = (lv) => {
 window.switchGrade = (grade) => {
     currentGrade = grade; // "j1", "j2", "j3"
     
-    // --- 1. ボタンの色の切り替え (全ての学年ボタンをまとめて処理) ---
-    const gradeButtons = ['j1', 'j2', 'j3'];
+    // HTMLにあるすべての学年ボタン（クラス名で取得するのが確実）
+    const allGradeButtons = document.querySelectorAll('.tab-btn, [id^="tab-j"]');
     
-    gradeButtons.forEach(g => {
-        // ロードマップ側と解説側の両方のボタンを取得（IDが共通または複数ある場合を考慮）
-        const btns = [
-            document.getElementById(`tab-${g}`),
-            document.getElementById(`exp-tab-${g}`) // 解説側のボタンIDもあれば
-        ];
-
-        btns.forEach(btn => {
-            if (!btn) return;
-            if (g === grade) {
-                // 選択された学年：青色
-                btn.style.background = "#4a90e2";
-                btn.style.color = "white";
-                btn.style.boxShadow = "inset 0 2px 4px rgba(0,0,0,0.2)";
-            } else {
-                // 選択されていない学年：グレー
-                btn.style.background = "#eee";
-                btn.style.color = "#666";
-                btn.style.boxShadow = "none";
-            }
-        });
+    allGradeButtons.forEach(btn => {
+        // ボタンのテキストやIDから判定
+        if (btn.id.includes(grade) || btn.innerText.includes(grade.replace('j', ''))) {
+            btn.style.background = "#4a90e2";
+            btn.style.color = "white";
+        } else {
+            btn.style.background = "#eee";
+            btn.style.color = "#666";
+        }
     });
 
-    // --- 2. タイトルの更新 ---
     const titles = { "j1": "中1数学", "j2": "中2数学", "j3": "中3数学" };
     const titleElem = document.getElementById('menu-title');
     if (titleElem) titleElem.innerText = `${titles[grade]}ロードマップ`;
 
-    // --- 3. 解説ダッシュボード側の表示切り替え ---
-    // もし switchTab という関数で中身を切り替えているなら実行
-    if (typeof switchTab === 'function') {
-        switchTab(grade); 
-    }
-
-    // --- 4. 演習メニュー（Lv.1〜15のボタン）の再描画 ---
-    if (typeof renderLevelMenu === 'function') {
-        renderLevelMenu(); 
-    }
+    if (typeof switchTab === 'function') switchTab(grade);
+    if (typeof renderLevelMenu === 'function') renderLevelMenu();
 };
 window.showSection = (id) => {
     const sections = ['auth-choice', 'auth-form', 'settings-section', 'test-section', 'menu-section', 'ranking-section'];
@@ -898,6 +881,34 @@ window.showGuide = (grade, lv) => {
         `;
     }
 };
+// 修了テスト開始ボタン（またはレベル15クリア時）に呼ぶ
+window.startFinalTest = () => {
+    currentMode = "final";
+    userScore = 0;   // ←ここで必ずリセット！
+    currentStep = 0;
+    
+    // 全問題から20問をランダム抽出
+    const allQ = allQuestions[currentGrade]; // 全問題データ
+    practiceQuestions = allQ.sort(() => 0.5 - Math.random()).slice(0, 20);
+
+    // 画面表示の更新
+    document.getElementById('total-step-display').innerText = practiceQuestions.length;
+    loadQuestion(0);
+};
+
+// 回答判定（ここもチェック）
+window.handleAnswer = () => {
+    const userAns = document.getElementById('answer-input').value.trim();
+    const q = practiceQuestions[currentStep];
+
+    if (userAns === q.ans) {
+        userScore++; // 正解なら加算
+        document.getElementById('feedback-result').innerText = "○ 正解";
+    } else {
+        document.getElementById('feedback-result').innerText = "× 不正解";
+    }
+    document.getElementById('feedback-panel').classList.add('show');
+};
 function loadQuestion() {
     // 【修正】現在の学年に合わせて問題リストを取得
     const qList = (currentMode === "diagnostic") ? diagnosticQuestions[currentGrade] : practiceQuestions;
@@ -915,35 +926,19 @@ function loadQuestion() {
     document.getElementById('answer-input').value = "";
     document.getElementById('feedback-panel').classList.remove('show');
 }
-window.handleAnswer = async () => {
-    const inputField = document.getElementById('answer-input');
-    // diagnosticQuestions[currentGrade] を見るように修正
+window.handleAnswer = () => {
+    const input = document.getElementById('answer-input');
+    const userAns = input.value.trim();
     const q = (currentMode === "diagnostic") ? diagnosticQuestions[currentGrade][currentStep] : practiceQuestions[currentStep];
-    let ans = inputField.value.trim();
-    
-    // normalize関数は以前のものをそのまま使ってください
-    const isCorrect = (normalize(ans) === normalize(q.ans));
-    const currentLv = q.lv || 0;
 
-    const feedbackPanel = document.getElementById('feedback-panel');
-    const aiComment = document.getElementById('ai-comment');
-    const feedbackResult = document.getElementById('feedback-result');
+    // デバッグ用にコンソールに正解を出す（完成したら消してOK）
+    console.log(`入力: ${userAns}, 正解: ${q.ans}`);
 
-    // 結果の文字と色をセット
-    feedbackResult.innerText = isCorrect ? "○ 正解" : "× 不正解";
-    feedbackResult.style.color = isCorrect ? "var(--success)" : "var(--error)"; 
-
-    // --- 【重要修正】levelMaster[currentGrade] から探すように変更 ---
-    const config = levelMaster[currentGrade].find(l => l.lv === currentLv);
-    
-    // 解説文をセット
-    aiComment.innerHTML = isCorrect ? 
-        "正解です！その調子！" : 
-        `正解は <b>${q.ans}</b> です。<br><br><div class="ai-box">【AI解説】<br>${config ? config.hint : "公式をチェック！"}</div>`;
-    
-    // --- 【重要】CSSのアニメーションを発動させる ---
-    feedbackPanel.classList.add('show');
-    feedbackPanel.dataset.isCorrect = isCorrect;
-
-    // スコア加算なども必要ならここに追加（例：if(isCorrect) userScore++;）
+    if (userAns == q.ans) { // 型が違ってもいいように == を使用
+        userScore++; 
+        document.getElementById('feedback-result').innerText = "正解！";
+    } else {
+        document.getElementById('feedback-result').innerText = "不正解...";
+    }
+    document.getElementById('feedback-panel').classList.add('show');
 };
