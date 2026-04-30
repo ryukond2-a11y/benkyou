@@ -175,6 +175,31 @@ function normalize(str) {
         // 5. 英字を小文字に統一
         .toLowerCase();           
 }
+// 「次へ」ボタンを押した時の処理を定義
+window.nextQuestion = () => {
+    // 1. 次の問題へインデックスを進める
+    currentStep++;
+
+    // 2. 問題リストを取得（診断か演習か）
+    const qList = (currentMode === "diagnostic") ? diagnosticQuestions[currentGrade] : practiceQuestions;
+
+    // 3. 次の問題があるかチェック
+    if (currentStep < qList.length) {
+        // 次の問題を表示
+        loadQuestion(currentStep);
+        
+        // フィードバック画面を隠す
+        document.getElementById('feedback-panel').classList.remove('show');
+    } else {
+        // 全問終了時の処理
+        if (currentMode === "diagnostic") {
+            finishDiagnostic(); // 診断終了関数（自分で定義したもの）へ
+        } else {
+            alert("演習完了です！");
+            showDashboard(); // ダッシュボードへ戻る
+        }
+    }
+};
 window.startUnit = (lv) => {
     currentMode = "practice";
     currentStep = 0;
