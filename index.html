@@ -11,39 +11,38 @@
 </head>
 <body>
     <div id="guide-dashboard" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:20000; overflow-y:auto; font-family: sans-serif;">
-    <div style="position:sticky; top:0; background:#4a90e2; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
-        <button onclick="closeDashboard()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
-        <span style="font-weight:bold;">数学攻略ダッシュボード</span>
-        <div style="width:24px;"></div>
+        <div style="position:sticky; top:0; background:#4a90e2; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+            <button onclick="closeDashboard()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
+            <span style="font-weight:bold;">数学攻略ダッシュボード</span>
+            <div style="width:24px;"></div>
+        </div>
+
+        <div style="display:flex; background:#f0f4f8; padding:10px; gap:10px;">
+            <button onclick="switchTab('j1')" class="tab-btn active" id="tab-j1" style="flex:1; padding:10px; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">中1</button>
+            <button onclick="switchTab('j2')" class="tab-btn" id="tab-j2" style="flex:1; padding:10px; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">中2</button>
+            <button onclick="switchTab('j3')" class="tab-btn" id="tab-j3" style="flex:1; padding:10px; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">中3</button>
+        </div>
+
+        <div id="level-button-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap:10px; padding:20px; border-bottom:1px solid #eee;">
+        </div>
+
+        <div id="guide-display-area" style="padding:20px; line-height:1.6; min-height:300px; background:#fafafa;">
+            <p style="color:#666; text-align:center;">レベルボタンを押すと解説が表示されます</p>
+        </div>
+        <div style="text-align: right; margin-top: 15px;">
+            <a href="admin.html" style="font-size: 0.75rem; color: #bbb; text-decoration: none;">⚙️ 管理者ログイン</a>
+        </div>
+    </div> <div id="notice-banner" style="display: none; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 15px; margin: 10px; border-radius: 8px; position: relative; z-index: 1000;">
+        <strong style="display: block; margin-bottom: 5px;">📢 新しいお知らせ</strong>
+        <p id="notice-text" style="margin: 0; padding-right: 80px; font-size: 0.95rem;"></p>
+        <button id="btn-close-notice" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: #856404; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">確認</button>
     </div>
 
-    <div style="display:flex; background:#f0f4f8; padding:10px; gap:10px;">
-        <button onclick="switchTab('j1')" class="tab-btn active" id="tab-j1" style="flex:1; padding:10px; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">中1</button>
-        <button onclick="switchTab('j2')" class="tab-btn" id="tab-j2" style="flex:1; padding:10px; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">中2</button>
-        <button onclick="switchTab('j3')" class="tab-btn" id="tab-j3" style="flex:1; padding:10px; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">中3</button>
+    <div style="background: white; padding: 15px; margin: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); max-width: 400px; border: 1px solid #ddd;">
+        <h4 style="margin-top:0; color:#2c3e50;">📬 管理者へメッセージを送信</h4>
+        <input type="text" id="user-msg-input" placeholder="不具合報告やメッセージを入力..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; margin-bottom: 8px;">
+        <button id="btn-send-to-admin" style="background: #3498db; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;">送信する</button>
     </div>
-
-    <div id="level-button-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap:10px; padding:20px; border-bottom:1px solid #eee;">
-    </div>
-
-    <div id="guide-display-area" style="padding:20px; line-height:1.6; min-height:300px; background:#fafafa;">
-        <p style="color:#666; text-align:center;">レベルボタンを押すと解説が表示されます</p>
-    </div>
-    <div style="text-align: right; margin-top: 15px;">
-    <a href="admin.html" style="font-size: 0.75rem; color: #bbb; text-decoration: none;">⚙️ 管理者ログイン</a>
-　　</div>
-    <div id="notice-banner" style="display: none; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 15px; margin: 10px; border-radius: 8px; position: relative;">
-    <strong style="display: block; margin-bottom: 5px;">📢 新しいお知らせ</strong>
-    <p id="notice-text" style="margin: 0; padding-right: 80px; font-size: 0.95rem;"></p>
-    <button id="btn-close-notice" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: #856404; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">確認</button>
-</div>
-
-<div style="background: white; padding: 15px; margin: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); max-width: 400px;">
-    <h4 style="margin-top:0; color:#2c3e50;">📬 管理者へメッセージを送信</h4>
-    <input type="text" id="user-msg-input" placeholder="不具合報告やメッセージを入力..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; margin-bottom: 8px;">
-    <button id="btn-send-to-admin" style="background: #3498db; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;">送信する</button>
-</div>
-</div>
 
 <style>
     .tab-btn.active { background: #4a90e2; color: white; }
@@ -91,21 +90,21 @@
         </section>
 
         <section id="menu-section" class="card hidden">
-    <h2 id="menu-title">中1数学ロードマップ</h2>
-    <div id="recommendation-banner" style="margin-bottom: 10px;"></div>
+            <h2 id="menu-title">中1数学ロードマップ</h2>
+            <div id="recommendation-banner" style="margin-bottom: 10px;"></div>
 
-    <div style="display:flex; background:#f0f4f8; padding:5px; gap:5px; border-radius:10px; margin-bottom:15px;">
-        <button onclick="switchGrade('j1')" id="tab-j1" style="flex:1; padding:10px; border:none; border-radius:8px; cursor:pointer; font-weight:bold; background:#4a90e2; color:white;">中1</button>
-        <button onclick="switchGrade('j2')" id="tab-j2" style="flex:1; padding:10px; border:none; border-radius:8px; cursor:pointer; font-weight:bold; background:none; color:#666;">中2</button>
-    </div>
-    
-    <button onclick="showRanking()" style="background-color: #ff9800; color: white; width: 100%; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 20px;">
-        🔥 ランキングを見る
-    </button>
-     
-    <div id="unit-list" class="unit-list-container" style="max-height: 400px; overflow-y: auto;">
-        </div>
-</section>
+            <div style="display:flex; background:#f0f4f8; padding:5px; gap:5px; border-radius:10px; margin-bottom:15px;">
+                <button onclick="switchGrade('j1')" id="tab-j1" style="flex:1; padding:10px; border:none; border-radius:8px; cursor:pointer; font-weight:bold; background:#4a90e2; color:white;">中1</button>
+                <button onclick="switchGrade('j2')" id="tab-j2" style="flex:1; padding:10px; border:none; border-radius:8px; cursor:pointer; font-weight:bold; background:none; color:#666;">中2</button>
+            </div>
+            
+            <button onclick="showRanking()" style="background-color: #ff9800; color: white; width: 100%; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 20px;">
+                🔥 ランキングを見る
+            </button>
+             
+            <div id="unit-list" class="unit-list-container" style="max-height: 400px; overflow-y: auto;">
+            </div>
+        </section>
 
         <section id="ranking-section" class="card hidden">
             <h2>🔥 挑戦問題数ランキング</h2>
