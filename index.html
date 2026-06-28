@@ -32,6 +32,17 @@
     <div style="text-align: right; margin-top: 15px;">
     <a href="admin.html" style="font-size: 0.75rem; color: #bbb; text-decoration: none;">⚙️ 管理者ログイン</a>
 　　</div>
+    <div id="notice-banner" style="display: none; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 15px; margin: 10px; border-radius: 8px; position: relative;">
+    <strong style="display: block; margin-bottom: 5px;">📢 新しいお知らせ</strong>
+    <p id="notice-text" style="margin: 0; padding-right: 80px; font-size: 0.95rem;"></p>
+    <button id="btn-close-notice" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: #856404; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">確認</button>
+</div>
+
+<div style="background: white; padding: 15px; margin: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); max-width: 400px;">
+    <h4 style="margin-top:0; color:#2c3e50;">📬 管理者へメッセージを送信</h4>
+    <input type="text" id="user-msg-input" placeholder="不具合報告やメッセージを入力..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; margin-bottom: 8px;">
+    <button id="btn-send-to-admin" style="background: #3498db; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;">送信する</button>
+</div>
 </div>
 
 <style>
