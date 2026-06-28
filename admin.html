@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>管理パネル</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; display: none; } /* 認証前は非表示 */
+        .card { background: white; padding: 25px; margin-bottom: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h1, h2 { color: #2c3e50; margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        input[type="text"] { width: 70%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 8px 14px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-send { background: #2ecc71; color: white; margin-left: 5px; }
+        .btn-del { background: #e74c3c; color: white; }
+        .msg-box { background: #edf2f7; padding: 12px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #3182ce; }
+        .badge { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+        
+        /* パスワード画面のスタイル */
+        #auth-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a202c; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        #auth-screen input { padding: 10px; font-size: 1rem; border-radius: 4px; border: none; margin-bottom: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div id="auth-screen">
+    <h2>管理者パスワードを入力してください</h2>
+    <input type="password" id="pass-input" placeholder="パスワード">
+    <button onclick="checkPassword()" style="background:#3182ce; color:white; padding:10px 20px;">ログイン</button>
+</div>
+
+<div class="container" id="admin-main">
+    <h1>🛠 管理者コントロールパネル</h1>
+    
+    <div class="card">
+        <h2>👥 ユーザー管理・個別お知らせ送信</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ユーザー名</th>
+                    <th>個別お知らせの送信</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="user-table-body"></tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>📥 ユーザーからの受信メッセージ一覧</h2>
+        <div id="incoming-messages"><p style="color: #999;">読み込み中...</p></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getDatabase, ref, set, get, remove, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAwdE7AqopqCSFu5fyTO9sj6iYlC_MtecI",
+        databaseURL: "https://benkyou-9a95b-default-rtdb.firebaseio.com/",
+        projectId: "benkyou-9a95b",
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // パスワード照合
+    window.checkPassword = function() {
+        const input = document.getElementById('pass-input').value;
+        if (input === "admin1234") { // 任意のパスワードに変えてください
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('admin-main').style.display = 'block';
+            loadData();
+        } else {
+            alert("パスワードが違います。");
+        }
+    };
+
+    function loadData() {
+        // ユーザー一覧の取得
+        get(ref(db, 'users')).then((snapshot) => {
+            const users = snapshot.val() || {};
+            const tbody = document.getElementById('user-table-body');
+            tbody.innerHTML = "";
+            Object.keys(users).forEach((username) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${username}</strong></td>
+                    <td>
+                        <input type="text" id="notice-${username}" placeholder="お知らせ内容...">
+                        <button class="btn-send" onclick="sendNotice('${username}')">送信</button>
+                    </td>
+                    <td><button class="btn-del" onclick="deleteAccount('${username}')">削除</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+
+        // 受信メッセージのリアルタイム監視
+        onValue(ref(db, 'messages'), (snapshot) => {
+            const messagesData = snapshot.val() || {};
+            const container = document.getElementById('incoming-messages');
+            container.innerHTML = "";
+            Object.keys(messagesData).forEach((username) => {
+                const userMsgs = messagesData[username];
+                Object.keys(userMsgs).forEach((msgId) => {
+                    const msg = userMsgs[msgId];
+                    const time = new Date(msg.timestamp).toLocaleString();
+                    const box = document.createElement('div');
+                    box.className = "msg-box";
+                    box.innerHTML = `<div><span class="badge">${time}</span> <strong>${username}</strong>:</div><div style="margin-top:5px;">${msg.text}</div>`;
+                    container.appendChild(box);
+                });
+            });
+        });
+    }
+
+    window.sendNotice = async (username) => {
+        const input = document.getElementById(`notice-${username}`);
+        const text = input.value.trim();
+        if(!text) return alert("入力してください");
+        await set(ref(db, `announcements/${username}`), { text: text, timestamp: Date.now() });
+        await set(ref(db, `users/${username}/hasNewNotice`), true);
+        alert("お知らせを送信しました");
+        input.value = "";
+    };
+
+    window.deleteAccount = async (username) => {
+        if(!confirm(`ユーザー「${username}」を完全に削除しますか？`)) return;
+        await remove(ref(db, `users/${username}`));
+        await remove(ref(db, `announcements/${username}`));
+        await remove(ref(db, `messages/${username}`));
+        alert("削除しました");
+        loadData();
+    };
+</script>
+</body>
+</html>
