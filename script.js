@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+import { getDatabase, ref, set, get, onValue, push } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
 const firebaseConfig = {
     apiKey: "AIzaSyAwdE7AqopqCSFu5fyTO9sj6iYlC_MtecI",
     databaseURL: "https://benkyou-9a95b-default-rtdb.firebaseio.com/",
@@ -346,6 +346,56 @@ window.processAuth = async () => {
     if (authMode === 'login') {
         if (snap.exists() && snap.val().password === pass) {
             currentUser = user;
+            
+            // ─── ★ここから追加：管理者用機能（お知らせ＆メッセージ）の処理 ───
+            
+            // 1. 個別お知らせバナーのリアルタイムチェック
+            onValue(ref(db, `users/${currentUser}`), (snapshot) => {
+                const userData = snapshot.val() || {};
+                const banner = document.getElementById('notice-banner');
+                const noticeText = document.getElementById('notice-text');
+
+                if (userData.hasNewNotice) {
+                    get(ref(db, `announcements/${currentUser}`)).then((annSnapshot) => {
+                        if (annSnapshot.exists()) {
+                            noticeText.innerText = annSnapshot.val().text;
+                            banner.style.display = 'block'; 
+                        }
+                    });
+                } else {
+                    if (banner) banner.style.display = 'none';
+                }
+            });
+
+            // バナーの確認ボタン
+            const closeBtn = document.getElementById('btn-close-notice');
+            if (closeBtn) {
+                closeBtn.onclick = async () => {
+                    await set(ref(db, `users/${currentUser}/hasNewNotice`), false);
+                };
+            }
+
+            // 2. メッセージ送信処理
+            const sendBtn = document.getElementById('btn-send-to-admin');
+            if (sendBtn) {
+                sendBtn.onclick = async () => {
+                    const input = document.getElementById('user-msg-input');
+                    const text = input.value.trim();
+                    if (!text) return alert("メッセージを入力してください");
+
+                    const newMsgRef = push(ref(db, `messages/${currentUser}`));
+                    await set(newMsgRef, {
+                        text: text,
+                        timestamp: Date.now()
+                    });
+
+                    alert("管理者にメッセージを送信しました！");
+                    input.value = "";
+                };
+            }
+            
+            // ─── ★ここまで追加 ───
+
             userScore = snap.val().level || 0;
             if (snap.val().hasTakenTest) {
                 showMenu();
